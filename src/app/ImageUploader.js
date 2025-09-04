@@ -13,9 +13,8 @@ export default function ImageUploader({ onUploadComplete, buttonLabel = "Upload 
   const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
 
   useEffect(() => {
-    // Debug log to verify env variables on the client
+    // Debug log to verify env variables on the client (dev only)
     if (process.env.NODE_ENV !== "production") {
-      // eslint-disable-next-line no-console
       console.log(
         "[ImageUploader] Cloudinary config:",
         { cloudName, uploadPreset }
