@@ -53,7 +53,7 @@ export default function Testimonial() {
                     : "opacity-0 absolute inset-0"
                 }`}
               >
-                <div className="text-6xl text-yellow-400 mb-4">"</div>
+                <div className="text-6xl text-yellow-400 mb-4">&quot;</div>
 
                 <p className="text-xl text-white mb-6 italic">
                   {testimonial.quote}

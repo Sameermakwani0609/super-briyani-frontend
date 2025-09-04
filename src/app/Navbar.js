@@ -56,7 +56,7 @@ export default function Navbar() {
           {/* Logo */}
           <div className="flex items-center space-x-2">
             <h1 className="text-2xl font-playfair font-bold bg-clip-text text-transparent bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-400">
-              Asif Bhai's Biryani
+              Asif Bhai&apos;s Biryani
             </h1>
           </div>
           <div className="hidden lg:flex items-center space-x-8 text-white">

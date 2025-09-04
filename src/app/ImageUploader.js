@@ -14,11 +14,13 @@ export default function ImageUploader({ onUploadComplete, buttonLabel = "Upload 
 
   useEffect(() => {
     // Debug log to verify env variables on the client
-    // eslint-disable-next-line no-console
-    console.log(
-      "[ImageUploader] Cloudinary config:",
-      { cloudName, uploadPreset }
-    );
+    if (process.env.NODE_ENV !== "production") {
+      // eslint-disable-next-line no-console
+      console.log(
+        "[ImageUploader] Cloudinary config:",
+        { cloudName, uploadPreset }
+      );
+    }
   }, [cloudName, uploadPreset]);
 
   const handleFileChange = async (e) => {
