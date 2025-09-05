@@ -466,7 +466,7 @@ export default function AdminDashboard() {
     if (hasNew) {
       playAlertForTenSeconds();
     }
-  }, [orders]);
+  }, [orders, playAlertForTenSeconds]);
   const handleAddItem = async (e) => {
     e.preventDefault();
     try {

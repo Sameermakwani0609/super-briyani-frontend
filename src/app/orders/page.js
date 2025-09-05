@@ -59,7 +59,7 @@ export default function OrdersPage() {
   return (
     <div className="min-h-screen bg-black text-white py-20">
       <div className="container mx-auto px-4">
-        <h1 className="text-4xl font-bold text-yellow-400 mb-8 text-center">Today's Orders</h1>
+        <h1 className="text-4xl font-bold text-yellow-400 mb-8 text-center">Today&apos;s Orders</h1>
         {orders.length === 0 ? (
           <div className="text-center">
             <div className="text-8xl text-yellow-400 mb-6">📋</div>
