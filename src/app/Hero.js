@@ -14,7 +14,7 @@ export default function Hero() {
       {/* Content */}
       <div className="relative z-10 text-center px-6">
         <h2 className="text-6xl md:text-8xl font-playfair font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-400 fade-in">
-          Asif Bhai&apos;s Briyani
+          Asif Bhai&apos;s Biryani
         </h2>
 
         <p

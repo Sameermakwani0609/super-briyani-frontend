@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { db } from "../../lib/firebase";
+import { collection, getDocs } from "firebase/firestore";
 import { useCart } from "./CartContext";
 import {
   FaTrash,
@@ -8,7 +10,7 @@ import {
   FaPlus,
   FaShoppingCart,
   FaUser,
-  FaPhone,
+  FaMobileAlt,
   FaMapMarkerAlt,
 } from "react-icons/fa";
 
@@ -28,6 +30,34 @@ export default function Cart() {
     mobile: "",
     address: "",
   });
+  const [outOfRange, setOutOfRange] = useState(false);
+  const [lastDistanceKm, setLastDistanceKm] = useState(null);
+  const [isFetchingLocation, setIsFetchingLocation] = useState(false);
+  const [adminCenter, setAdminCenter] = useState({ lat: 20.491026, lng: 77.866386 });
+  const [adminRadiusKm, setAdminRadiusKm] = useState(10);
+  const [discountPercent, setDiscountPercent] = useState(0);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const snapshot = await getDocs(collection(db, "shop"));
+        if (!snapshot.empty) {
+          const data = snapshot.docs[0].data() || {};
+          if (typeof data.CityLat === "number" && typeof data.CityLng === "number") {
+            setAdminCenter({ lat: data.CityLat, lng: data.CityLng });
+          }
+          if (typeof data.DeliveryRadiusKm === "number") {
+            setAdminRadiusKm(data.DeliveryRadiusKm);
+          }
+          if (typeof data.DiscountPercent === "number") {
+            setDiscountPercent(data.DiscountPercent);
+          }
+        }
+      } catch {
+        // ignore and keep defaults
+      }
+    })();
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -36,6 +66,32 @@ export default function Cart() {
       [name]: value,
     }));
   };
+
+  const getDistanceKm = (lat1, lon1, lat2, lon2) => {
+    const toRad = (v) => (v * Math.PI) / 180;
+    const R = 6371; // km
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
+
+  const getCurrentPosition = () =>
+    new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error("Geolocation not supported"));
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(resolve, reject, {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      });
+    });
 
   const handlePlaceOrder = async () => {
     if (
@@ -58,10 +114,61 @@ export default function Cart() {
     }
 
     try {
-      await placeOrder(billingDetails.address);
+      // Gate by location using admin-defined center & radius
+      const HOTEL_LAT = adminCenter.lat;
+      const HOTEL_LNG = adminCenter.lng;
+      const MAX_KM = adminRadiusKm;
+
+      try {
+        const pos = await getCurrentPosition();
+        const { latitude, longitude } = pos.coords || {};
+        if (typeof latitude === "number" && typeof longitude === "number") {
+          const distanceKm = getDistanceKm(latitude, longitude, HOTEL_LAT, HOTEL_LNG);
+          if (distanceKm > MAX_KM) {
+            setOutOfRange(true);
+            setLastDistanceKm(distanceKm);
+            return;
+          }
+        }
+      } catch (geoErr) {
+        // If user blocks or geolocation fails, block order to avoid out-of-area deliveries
+        alert("We couldn't verify your location. Please enable location access to place an order within 10 km of Ner, Yavatmal (Maharashtra).");
+        return;
+      }
+
+      await placeOrder(billingDetails.address, billingDetails.name, billingDetails.mobile);
       setBillingDetails({ name: "", mobile: "", address: "" });
+      setOutOfRange(false);
+      setLastDistanceKm(null);
     } catch (e) {
       // placeOrder already alerts on failure
+    }
+  };
+
+  const tryUseCurrentLocation = async () => {
+    setIsFetchingLocation(true);
+    try {
+      const HOTEL_LAT = adminCenter.lat;
+      const HOTEL_LNG = adminCenter.lng;
+      const MAX_KM = adminRadiusKm;
+      const pos = await getCurrentPosition();
+      const { latitude, longitude } = pos.coords || {};
+      if (typeof latitude === "number" && typeof longitude === "number") {
+        const distanceKm = getDistanceKm(latitude, longitude, HOTEL_LAT, HOTEL_LNG);
+        setLastDistanceKm(distanceKm);
+        if (distanceKm <= MAX_KM) {
+          await placeOrder(billingDetails.address);
+          setBillingDetails({ name: "", mobile: "", address: "" });
+          setOutOfRange(false);
+          setLastDistanceKm(null);
+          return;
+        }
+      }
+      setOutOfRange(true);
+    } catch (e) {
+      alert("Couldn't get current location. Please enable location and try again.");
+    } finally {
+      setIsFetchingLocation(false);
     }
   };
 
@@ -158,8 +265,19 @@ export default function Cart() {
             <div className="mt-6 pt-4 border-t border-gray-700">
               <div className="flex justify-between items-center text-xl font-bold">
                 <span>Total:</span>
-                <span className="text-yellow-400">₹{getCartTotal()}</span>
+                <span className="text-yellow-400">₹{(() => {
+                  const raw = getCartTotal();
+                  const pct = Number(discountPercent) || 0;
+                  const discounted = Math.max(0, raw * (1 - pct / 100));
+                  return discounted.toFixed(2);
+                })()}</span>
               </div>
+              {Number(discountPercent) > 0 && (
+                <div className="text-right text-sm text-gray-400 mt-1">
+                  <span className="line-through mr-2">₹{getCartTotal().toFixed ? getCartTotal().toFixed(2) : getCartTotal()}</span>
+                  <span className="text-green-400">({Number(discountPercent)}% off applied)</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -207,7 +325,7 @@ export default function Cart() {
 
               <div>
                 <label className="block text-yellow-400 font-semibold mb-2 flex items-center">
-                  <FaPhone className="mr-2" />
+                  <FaMobileAlt className="mr-2" />
                   Mobile Number
                 </label>
                 <input
@@ -239,11 +357,34 @@ export default function Cart() {
             </div>
 
             <div className="mt-8 space-y-4">
+              {outOfRange && (
+                <div className="p-4 rounded-lg border border-red-600 bg-red-900/40 text-red-200">
+                  <div className="font-semibold mb-2">Out of delivery range</div>
+                  <div className="text-sm mb-3">
+                    We currently deliver within 10 km only.
+                    {typeof lastDistanceKm === "number" && (
+                      <span> Your distance is ~{lastDistanceKm.toFixed(1)} km.</span>
+                    )}
+                  </div>
+                  <button
+                    onClick={tryUseCurrentLocation}
+                    disabled={isFetchingLocation}
+                    className="bg-yellow-400 disabled:opacity-60 text-black px-4 py-2 rounded font-semibold hover:bg-yellow-500"
+                  >
+                    {isFetchingLocation ? "Checking..." : "Use current location"}
+                  </button>
+                </div>
+              )}
               <button
                 onClick={handlePlaceOrder}
                 className="w-full bg-gradient-to-r from-yellow-400 to-yellow-600 text-black py-4 rounded-lg font-bold text-lg hover:shadow-lg hover:shadow-yellow-400/25 transition-all duration-200"
               >
-                Place Order - ₹{getCartTotal()}
+                {(() => {
+                  const raw = Number(getCartTotal() || 0);
+                  const pct = Number(discountPercent) || 0;
+                  const discounted = Math.max(0, raw * (1 - pct / 100));
+                  return `Place Order - ₹${discounted.toFixed(2)}`;
+                })()}
               </button>
 
               <button

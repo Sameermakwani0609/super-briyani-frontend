@@ -13,6 +13,7 @@ export default function MenuPage() {
   const [categories, setCategories] = useState([]);
   const [filter, setFilter] = useState("all");
   const [isOpen, setIsOpen] = useState(null); // Track shop open status
+  const [discountPercent, setDiscountPercent] = useState(0);
   const { addToCart, cart, updateQuantity } = useCart(); // <-- add cart, updateQuantity
 
   // Map category names to icons
@@ -30,12 +31,14 @@ export default function MenuPage() {
       try {
         const shopSnapshot = await getDocs(collection(db, "shop"));
         let openStatus = false;
+        let discount = 0;
         shopSnapshot.forEach((doc) => {
-          if (doc.data().IsOpen !== undefined) {
-            openStatus = doc.data().IsOpen;
-          }
+          const data = doc.data() || {};
+          if (data.IsOpen !== undefined) openStatus = data.IsOpen;
+          if (typeof data.DiscountPercent === "number") discount = data.DiscountPercent;
         });
         setIsOpen(openStatus);
+        setDiscountPercent(discount);
       } catch {
         setIsOpen(false);
       }
@@ -156,6 +159,10 @@ export default function MenuPage() {
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredItems.map((item) => {
             const quantity = getCartQuantity(item.id);
+            const pct = Number(discountPercent) || 0;
+            const price = Number(item.price || 0);
+            const discounted = Math.max(0, price * (1 - pct / 100));
+            const showDiscount = pct > 0 && discounted !== price;
             return (
               <div
                 key={item.id}
@@ -176,7 +183,17 @@ export default function MenuPage() {
                 <h3 className="text-2xl font-bold text-yellow-400 mb-2">
                   {item.itemName}
                 </h3>
-                <p className="text-xl mb-4">₹{item.price}</p>
+                <div className="text-xl mb-4">
+                  {showDiscount ? (
+                    <div className="flex items-center justify-center gap-2">
+                      <span className="line-through text-gray-400">₹{price.toFixed(2)}</span>
+                      <span className="text-yellow-400 font-bold">₹{discounted.toFixed(2)}</span>
+                      <span className="text-xs text-green-400">({pct}% off)</span>
+                    </div>
+                  ) : (
+                    <span>₹{price.toFixed(2)}</span>
+                  )}
+                </div>
                 {/* Add to Cart or Quantity Controls */}
                 {quantity === 0 ? (
                   <button

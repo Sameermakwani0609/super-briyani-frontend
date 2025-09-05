@@ -71,6 +71,11 @@ export default function AdminLogin({ onClose }) {
 
       const isValid = bcrypt.compareSync(password, hash);
       if (isValid) {
+        try {
+          localStorage.setItem("isAdminAuthed", "true");
+          // Mute new-order sound briefly right after login
+          localStorage.setItem("alertMutedUntil", String(Date.now() + 15000));
+        } catch {}
         setMessage("Login successful!...");
         setMsgType("success");
         setTimeout(() => router.push("/admin"), 1200);

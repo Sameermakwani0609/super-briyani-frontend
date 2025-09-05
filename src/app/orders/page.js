@@ -8,7 +8,10 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState([]);
   const [user, setUser] = useState(null);
   const [allOrders, setAllOrders] = useState([]);
-  const [showHistory, setShowHistory] = useState(false);
+  const [discountPercent, setDiscountPercent] = useState(0);
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const [historyDate, setHistoryDate] = useState(todayStr);
+  const [historyResults, setHistoryResults] = useState([]);
 
   useEffect(() => {
     const unsub = onAuthChange((u) => setUser(u));
@@ -16,6 +19,17 @@ export default function OrdersPage() {
   }, []);
 
   useEffect(() => {
+    (async () => {
+      try {
+        const snap = await getDocs(collection(db, 'shop'));
+        let pct = 0;
+        snap.forEach((d) => {
+          const data = d.data() || {};
+          if (typeof data.DiscountPercent === 'number') pct = data.DiscountPercent;
+        });
+        setDiscountPercent(pct);
+      } catch {}
+    })();
     const fetchOrders = async () => {
       if (!user) return;
       const q = query(
@@ -37,7 +51,7 @@ export default function OrdersPage() {
         return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
       };
       const todayOrders = userOrders.filter(o => isSameDay(o.createdAt));
-      setOrders(todayOrders.slice(0, 1));
+      setOrders(todayOrders);
     };
     fetchOrders();
   }, [user]);
@@ -45,22 +59,24 @@ export default function OrdersPage() {
   return (
     <div className="min-h-screen bg-black text-white py-20">
       <div className="container mx-auto px-4">
-        <h1 className="text-4xl font-bold text-yellow-400 mb-8 text-center">Latest Order (Today)</h1>
+        <h1 className="text-4xl font-bold text-yellow-400 mb-8 text-center">Today's Orders</h1>
         {orders.length === 0 ? (
           <div className="text-center">
             <div className="text-8xl text-yellow-400 mb-6">📋</div>
             <h2 className="text-2xl font-bold text-white mb-4">No orders today</h2>
-            <p className="text-gray-400 mb-8">Your latest order for today will appear here.</p>
+            <p className="text-gray-400 mb-8">Your orders for today will appear here.</p>
           </div>
         ) : (
-          <div className="max-w-3xl mx-auto">
-            {(() => {
-              const order = orders[0];
+          <div className="max-w-3xl mx-auto space-y-6">
+            {orders.map((order) => {
               const createdStr = order.createdAt?.toDate ? order.createdAt.toDate().toLocaleString() : (order.createdAt ? new Date(order.createdAt).toLocaleString() : '');
               const status = (order.status || 'pending');
               const statusClass = status === 'accepted' ? 'bg-green-600 text-white' : (status === 'rejected' ? 'bg-red-600 text-white' : 'bg-yellow-400 text-black');
+              const baseTotal = order.total != null ? Number(order.total) : (order.items || []).reduce((t, it) => t + Number(it.price || 0) * Number(it.quantity || 0), 0);
+              const pct = Number(discountPercent) || 0;
+              const discounted = Math.max(0, baseTotal * (1 - pct/100));
               return (
-                <div className="bg-gray-900 rounded-lg p-6 border border-yellow-500">
+                <div key={order.id} className="bg-gray-900 rounded-lg p-6 border border-yellow-500">
                   <div className="flex items-center justify-between mb-4">
                     <div>
                       <div className="text-gray-400 text-sm">Order ID</div>
@@ -71,65 +87,137 @@ export default function OrdersPage() {
                   <div className="grid md:grid-cols-3 gap-4 text-sm text-gray-300 mb-6">
                     <div><span className="text-yellow-400">Name:</span> {order.name}</div>
                     <div><span className="text-yellow-400">Date:</span> {createdStr}</div>
-                    <div><span className="text-yellow-400">Total:</span> ₹{order.total}</div>
+                    <div className="text-right md:text-left">
+                      <span className="text-yellow-400">Total:</span>
+                      {pct > 0 ? (
+                        <span> <span className="line-through text-gray-400 mr-1">₹{baseTotal.toFixed(2)}</span> <span className="text-yellow-400 font-semibold">₹{discounted.toFixed(2)}</span> <span className="text-green-400 text-xs">({pct}% off)</span></span>
+                      ) : (
+                        <span> ₹{baseTotal.toFixed(2)}</span>
+                      )}
+                    </div>
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold text-yellow-400 mb-2">Items</h3>
                     <div className="space-y-2">
-                      {(order.items || []).map((i, idx) => (
-                        <div key={idx} className="flex justify-between items-center bg-gray-800 p-3 rounded">
-                          <span className="text-white">{i.itemName}</span>
-                          <span className="text-yellow-400 font-semibold">Qty: {i.quantity}</span>
-                        </div>
-                      ))}
+                      {(order.items || []).map((i, idx) => {
+                        const unit = Number(i.price || 0);
+                        const qty = Number(i.quantity || 0);
+                        const lineBase = unit * qty;
+                        const lineDisc = Math.max(0, lineBase * (1 - (Number(discountPercent)||0)/100));
+                        const hasDisc = (Number(discountPercent)||0) > 0 && lineDisc !== lineBase;
+                        return (
+                          <div key={idx} className="flex justify_between items-center bg-gray-800 p-3 rounded flex justify-between">
+                            <div className="text-white">
+                              <div className="font-semibold">{i.itemName}</div>
+                              <div className="text-sm text-gray-300">₹{unit.toFixed(2)} × {qty}</div>
+                            </div>
+                            <div className="text-right">
+                              {hasDisc ? (
+                                <div>
+                                  <div className="text-gray-400 line-through">₹{lineBase.toFixed(2)}</div>
+                                  <div className="text-yellow-400 font-semibold">₹{lineDisc.toFixed(2)}</div>
+                                </div>
+                              ) : (
+                                <div className="text-yellow-400 font-semibold">₹{lineBase.toFixed(2)}</div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
               );
-            })()}
-            <div className="mt-4 text-center">
-              <button
-                onClick={() => setShowHistory((v) => !v)}
-                className="inline-block bg-yellow-400 text-black px-6 py-2 rounded-lg font-semibold hover:bg-yellow-500 transition-colors"
-              >
-                {showHistory ? 'Hide history' : 'Show history'}
-              </button>
-            </div>
-            {showHistory && (
-              <div className="mt-6 space-y-3">
-                {(allOrders || []).map((o) => {
-                  const createdStr = o.createdAt?.toDate ? o.createdAt.toDate().toLocaleString() : (o.createdAt ? new Date(o.createdAt).toLocaleString() : '');
-                  const status = (o.status || 'pending');
-                  const statusClass = status === 'accepted' ? 'bg-green-600 text-white' : (status === 'rejected' ? 'bg-red-600 text-white' : 'bg-yellow-400 text-black');
-                  return (
-                    <div key={o.id} className="bg-gray-900 rounded-lg p-4 border border-gray-700">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="text-sm text-gray-400">{o.orderID || `#${o.id}`}</div>
-                          <div className="text-white">{createdStr}</div>
-                        </div>
-                        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${statusClass}`}>{status.charAt(0).toUpperCase() + status.slice(1)}</span>
-                      </div>
-                      <div className="mt-3 grid md:grid-cols-3 gap-3 text-sm text-gray-300">
-                        <div><span className="text-yellow-400">Name:</span> {o.name}</div>
-                        <div><span className="text-yellow-400">Total:</span> ₹{o.total}</div>
-                        <div><span className="text-yellow-400">Items:</span> {(o.items || []).length}</div>
-                      </div>
-                      <div className="mt-2 space-y-1">
-                        {(o.items || []).map((i, idx) => (
-                                                  <div key={idx} className="flex justify-between text-sm text-gray-300">
-                          <span>{i.itemName}</span>
-                          <span className="text-yellow-400">Qty: {i.quantity}</span>
-                        </div>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+            })}
           </div>
         )}
+
+        <div className="max-w-3xl mx-auto mt-10">
+          <div className="flex items-center gap-3 mb-4">
+            <input
+              type="date"
+              value={historyDate}
+              onChange={(e) => setHistoryDate(e.target.value)}
+              className="bg-gray-800 border border-gray-700 text-white px-3 py-2 rounded"
+            />
+            <button
+              onClick={() => {
+                const [y,m,d] = historyDate.split('-').map(n=>parseInt(n,10));
+                const matches = (ts) => {
+                  const dt = ts?.toDate ? ts.toDate() : (ts ? new Date(ts) : null);
+                  if (!dt) return false;
+                  return dt.getFullYear()===y && (dt.getMonth()+1)===m && dt.getDate()===d;
+                };
+                setHistoryResults(allOrders.filter(o => matches(o.createdAt)));
+              }}
+              className="bg-yellow-400 hover:bg-yellow-500 text-black px-4 py-2 rounded font-semibold"
+            >
+              Search history
+            </button>
+          </div>
+          {historyResults.length > 0 && (
+            <div className="space-y-4">
+              {historyResults.map((o) => {
+                const createdStr = o.createdAt?.toDate ? o.createdAt.toDate().toLocaleString() : (o.createdAt ? new Date(o.createdAt).toLocaleString() : '');
+                const status = (o.status || 'pending');
+                const statusClass = status === 'accepted' ? 'bg-green-600 text-white' : (status === 'rejected' ? 'bg-red-600 text-white' : 'bg-yellow-400 text-black');
+                const baseTotal = o.total != null ? Number(o.total) : (o.items || []).reduce((t, it) => t + Number(it.price || 0) * Number(it.quantity || 0), 0);
+                const pct = Number(discountPercent) || 0;
+                const discounted = Math.max(0, baseTotal * (1 - pct/100));
+                return (
+                  <div key={o.id} className="bg-gray-900 rounded-lg p-4 border border-gray-700">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-sm text-gray-400">{o.orderID || `#${o.id}`}</div>
+                        <div className="text-white">{createdStr}</div>
+                      </div>
+                      <span className={`px-2 py-1 rounded-full text-xs font-semibold ${statusClass}`}>{status.charAt(0).toUpperCase() + status.slice(1)}</span>
+                    </div>
+                    <div className="mt-3 grid md:grid-cols-3 gap-3 text-sm text-gray-300">
+                      <div><span className="text-yellow-400">Name:</span> {o.name}</div>
+                      <div className="text-right md:text-left">
+                        <span className="text-yellow-400">Total:</span>
+                        {pct > 0 ? (
+                          <span> <span className="line-through text-gray-400 mr-1">₹{baseTotal.toFixed(2)}</span> <span className="text-yellow-400 font-semibold">₹{discounted.toFixed(2)}</span> <span className="text-green-400 text-xs">({pct}% off)</span></span>
+                        ) : (
+                          <span> ₹{baseTotal.toFixed(2)}</span>
+                        )}
+                      </div>
+                      <div><span className="text-yellow-400">Items:</span> {(o.items || []).length}</div>
+                    </div>
+                    <div className="mt-3 space-y-1">
+                      {(o.items || []).map((i, idx) => {
+                        const unit = Number(i.price || 0);
+                        const qty = Number(i.quantity || 0);
+                        const lineBase = unit * qty;
+                        const lineDisc = Math.max(0, lineBase * (1 - pct/100));
+                        const hasDisc = pct > 0 && lineDisc !== lineBase;
+                        return (
+                          <div key={idx} className="flex justify-between items-center bg-gray-800 p-2 rounded text-sm text-gray-300">
+                            <div>
+                              <div className="text-white font-medium">{i.itemName}</div>
+                              <div className="text-xs text-gray-400">₹{unit.toFixed(2)} × {qty}</div>
+                            </div>
+                            <div className="text-right">
+                              {hasDisc ? (
+                                <div>
+                                  <div className="line-through text-gray-400">₹{lineBase.toFixed(2)}</div>
+                                  <div className="text-yellow-400 font-semibold">₹{lineDisc.toFixed(2)}</div>
+                                </div>
+                              ) : (
+                                <div className="text-yellow-400 font-semibold">₹{lineBase.toFixed(2)}</div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

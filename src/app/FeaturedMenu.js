@@ -15,6 +15,7 @@ import { Navigation, Pagination } from "swiper/modules";
 
 export default function FeaturedMenu() {
   const [menuItems, setMenuItems] = useState([]);
+  const [discountPercent, setDiscountPercent] = useState(0);
   const { addToCart, cart, updateQuantity } = useCart();
 
   useEffect(() => {
@@ -39,6 +40,21 @@ export default function FeaturedMenu() {
     fetchMenuItems();
   }, []);
 
+  useEffect(() => {
+    const fetchDiscount = async () => {
+      try {
+        const snap = await getDocs(collection(db, "shop"));
+        let discount = 0;
+        snap.forEach((d) => {
+          const data = d.data() || {};
+          if (typeof data.DiscountPercent === "number") discount = data.DiscountPercent;
+        });
+        setDiscountPercent(discount);
+      } catch {}
+    };
+    fetchDiscount();
+  }, []);
+
   // Helper to get quantity in cart for an item
   const getCartQuantity = (itemId) => {
     const found = cart?.find((cartItem) => cartItem.id === itemId);
@@ -48,6 +64,10 @@ export default function FeaturedMenu() {
   // Reusable card component
   const Card = ({ item }) => {
     const quantity = getCartQuantity(item.id);
+    const pct = Number(discountPercent) || 0;
+    const price = Number(item.price || 0);
+    const discounted = Math.max(0, price * (1 - pct / 100));
+    const showDiscount = pct > 0 && discounted !== price;
     return (
       <div className="relative bg-black/70 backdrop-blur-md border border-gray-300 rounded-2xl p-6 transform transition-all duration-300 hover:-translate-y-2 hover:shadow-lg hover:shadow-yellow-300/50 group">
         {/* Image */}
@@ -73,9 +93,15 @@ export default function FeaturedMenu() {
 
         {/* Price */}
         <div className="flex items-center">
-          <span className="text-2xl font-bold text-yellow-400">
-            ₹{item.price}
-          </span>
+          {showDiscount ? (
+            <div className="flex items-center gap-2">
+              <span className="line-through text-gray-400">₹{price.toFixed(2)}</span>
+              <span className="text-2xl font-bold text-yellow-400">₹{discounted.toFixed(2)}</span>
+              <span className="text-xs text-green-400">({pct}% off)</span>
+            </div>
+          ) : (
+            <span className="text-2xl font-bold text-yellow-400">₹{price.toFixed(2)}</span>
+          )}
         </div>
 
         {/* Add to Cart or Quantity Controls */}

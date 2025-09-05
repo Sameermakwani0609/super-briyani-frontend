@@ -107,7 +107,7 @@ export function CartProvider({ children }) {
   };
 
   // --- Place Order ---
-  const placeOrder = async (address) => {
+  const placeOrder = async (address, billingName, billingMobile) => {
     if (!user) return alert("Please sign in first");
     if (!address) return alert("Please enter address");
     if (!cart || cart.length === 0) return alert("Cart is empty");
@@ -120,6 +120,8 @@ export function CartProvider({ children }) {
         orderID,
         userId: user.uid,
         name: user.displayName,
+        billingName: billingName || null,
+        billingMobile: billingMobile || null,
         email: user.email,
         address,
         items: cart,

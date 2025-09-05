@@ -18,7 +18,7 @@ export default function LoadingOverlay() {
     >
       <div className="text-center">
         <div className="w-12 h-12 border-4 border-yellow-500/30 border-t-yellow-500 rounded-full animate-spin mx-auto mb-4"></div>
-        <h2 className="text-4xl md:text-5xl font-semibold text-yellow-400">Super Briyani</h2>
+        <h2 className="text-4xl md:text-5xl font-semibold text-yellow-400">Asif Bhai&apos;s Biryani</h2>
         <p className="mt-1 text-gray-400">Preparing your luxury experience...</p>
       </div>
     </div>
