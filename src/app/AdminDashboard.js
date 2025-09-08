@@ -18,7 +18,13 @@ import {
   FaSignOutAlt,
   FaMapMarkerAlt,
   FaTag,
+  FaEnvelope,
+  FaHeart,
+  FaCalendarAlt,
+  FaUsers,
+  FaMapPin,
 } from "react-icons/fa";
+import { MdPhone } from "react-icons/md";
 import { db } from "../../lib/firebase";
 import ImageUploader from "./ImageUploader";
 import {
@@ -35,8 +41,10 @@ import {
 export default function AdminDashboard() {
   const router = useRouter();
   const todayStr = new Date().toISOString().slice(0, 10);
+  const [inquiryDate, setInquiryDate] = useState(todayStr);
   const [menuItems, setMenuItems] = useState([]);
   const [orders, setOrders] = useState([]);
+  const [inquiries, setInquiries] = useState([]);
   const [nextItemId, setNextItemId] = useState(1);
   const [nextOrderId, setNextOrderId] = useState(1);
   const [activeTab, setActiveTab] = useState("add-item");
@@ -121,6 +129,17 @@ export default function AdminDashboard() {
       setOrders(list);
     });
 
+    // Fetch inquiries
+    const inquiriesQuery = query(
+      collection(db, "inquiries"),
+      orderBy("createdAt", "desc")
+    );
+    const unsubscribeInquiries = onSnapshot(inquiriesQuery, (snapshot) => {
+      const list = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+      console.debug("[AdminDashboard] inquiries snapshot:", list);
+      setInquiries(list);
+    });
+
     // Fetch shop status (first doc in collection)
     const unsub = onSnapshot(collection(db, "shop"), (snapshot) => {
       if (!snapshot.empty) {
@@ -130,14 +149,17 @@ export default function AdminDashboard() {
         if (docData.City) setAdminCity(docData.City);
         if (typeof docData.CityLat === "number") setAdminLat(docData.CityLat);
         if (typeof docData.CityLng === "number") setAdminLng(docData.CityLng);
-        if (typeof docData.DeliveryRadiusKm === "number") setDeliveryRadiusKm(docData.DeliveryRadiusKm);
-        if (typeof docData.DiscountPercent === "number") setDiscountPercent(docData.DiscountPercent);
+        if (typeof docData.DeliveryRadiusKm === "number")
+          setDeliveryRadiusKm(docData.DeliveryRadiusKm);
+        if (typeof docData.DiscountPercent === "number")
+          setDiscountPercent(docData.DiscountPercent);
       }
     });
 
     return () => {
       unsubscribe();
       unsubscribeOrders();
+      unsubscribeInquiries();
       unsub();
     };
   }, []);
@@ -181,7 +203,8 @@ export default function AdminDashboard() {
     }
     const startSynthBackup = () => {
       try {
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const audioCtx = new (window.AudioContext ||
+          window.webkitAudioContext)();
         const oscillator = audioCtx.createOscillator();
         const gainNode = audioCtx.createGain();
         oscillator.type = "sine";
@@ -221,15 +244,29 @@ export default function AdminDashboard() {
             // Distinguish autoplay vs file/mime errors
             const name = err?.name || "";
             const msg = (err?.message || "").toLowerCase();
-            const likelyAutoplay = name === "NotAllowedError" || msg.includes("gesture");
-            const mediaUnsupported = name === "NotSupportedError" || msg.includes("unsupported") || msg.includes("decode") || msg.includes("mime");
-            const networkIssue = name === "AbortError" || name === "NotFoundError" || msg.includes("network") || msg.includes("404");
-            try { if (alertStopRef.current) clearTimeout(alertStopRef.current); } catch {}
+            const likelyAutoplay =
+              name === "NotAllowedError" || msg.includes("gesture");
+            const mediaUnsupported =
+              name === "NotSupportedError" ||
+              msg.includes("unsupported") ||
+              msg.includes("decode") ||
+              msg.includes("mime");
+            const networkIssue =
+              name === "AbortError" ||
+              name === "NotFoundError" ||
+              msg.includes("network") ||
+              msg.includes("404");
+            try {
+              if (alertStopRef.current) clearTimeout(alertStopRef.current);
+            } catch {}
             isAlertingRef.current = false;
             if (likelyAutoplay) {
               startSynthBackup();
             } else if (mediaUnsupported || networkIssue) {
-              showNotification("Alert sound file error. Check public/receiver.mp3.", "error");
+              showNotification(
+                "Alert sound file error. Check public/receiver.mp3.",
+                "error"
+              );
             } else {
               // default: do not spam; attempt silent fallback
               startSynthBackup();
@@ -251,11 +288,18 @@ export default function AdminDashboard() {
   const reverseGeocode = async (lat, lon) => {
     try {
       const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`;
-      const res = await fetch(url, { headers: { "Accept": "application/json" } });
+      const res = await fetch(url, { headers: { Accept: "application/json" } });
       if (!res.ok) throw new Error("reverse geocode failed");
       const data = await res.json();
       const addr = data?.address || {};
-      const city = addr.city || addr.town || addr.village || addr.suburb || addr.state_district || addr.state || "";
+      const city =
+        addr.city ||
+        addr.town ||
+        addr.village ||
+        addr.suburb ||
+        addr.state_district ||
+        addr.state ||
+        "";
       return city;
     } catch {
       return "";
@@ -307,7 +351,9 @@ export default function AdminDashboard() {
             setAdminLat(ipLat);
             setAdminLng(ipLon);
             if (cityName) setAdminCity(cityName);
-            setLocMessage(cityName ? `Approximate: ${cityName}` : "Approximate location set");
+            setLocMessage(
+              cityName ? `Approximate: ${cityName}` : "Approximate location set"
+            );
             showNotification("Approximate location set (IP based)", "info");
             setLocFetching(false);
             return;
@@ -329,7 +375,9 @@ export default function AdminDashboard() {
         City: adminCity || null,
         CityLat: typeof adminLat === "number" ? adminLat : null,
         CityLng: typeof adminLng === "number" ? adminLng : null,
-        DeliveryRadiusKm: Number.isFinite(Number(deliveryRadiusKm)) ? Number(deliveryRadiusKm) : 10,
+        DeliveryRadiusKm: Number.isFinite(Number(deliveryRadiusKm))
+          ? Number(deliveryRadiusKm)
+          : 10,
         CityUpdatedAt: new Date().toISOString(),
       });
       showNotification("Location and radius saved");
@@ -363,7 +411,7 @@ export default function AdminDashboard() {
       const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&addressdetails=1&city=${encodeURIComponent(
         query
       )}`;
-      const res = await fetch(url, { headers: { "Accept": "application/json" } });
+      const res = await fetch(url, { headers: { Accept: "application/json" } });
       if (!res.ok) throw new Error("search failed");
       const data = await res.json();
       const mapped = (data || []).map((it) => ({
@@ -383,7 +431,9 @@ export default function AdminDashboard() {
   // Unlock audio on first interaction
   useEffect(() => {
     const markEnabled = () => {
-      try { localStorage.setItem("soundUnlocked", "true"); } catch {}
+      try {
+        localStorage.setItem("soundUnlocked", "true");
+      } catch {}
       setSoundEnabled(true);
     };
     const tryAutoUnlock = async () => {
@@ -433,7 +483,9 @@ export default function AdminDashboard() {
       const p = audioEl.play();
       if (p && typeof p.then === "function") await p;
       audioEl.pause();
-      try { localStorage.setItem("soundUnlocked", "true"); } catch {}
+      try {
+        localStorage.setItem("soundUnlocked", "true");
+      } catch {}
       setSoundEnabled(true);
       showNotification("Sound enabled for new orders", "success");
     } catch {
@@ -538,17 +590,21 @@ export default function AdminDashboard() {
   const sendWhatsAppMessage = async (mobileNumber, message) => {
     try {
       // Remove any non-digit characters from mobile number
-      const cleanNumber = mobileNumber.replace(/\D/g, '');
-      
+      const cleanNumber = mobileNumber.replace(/\D/g, "");
+
       // Add country code if not present (assuming India +91)
-      const phoneNumber = cleanNumber.startsWith('91') ? cleanNumber : `91${cleanNumber}`;
-      
+      const phoneNumber = cleanNumber.startsWith("91")
+        ? cleanNumber
+        : `91${cleanNumber}`;
+
       // Create WhatsApp URL
-      const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
-      
+      const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(
+        message
+      )}`;
+
       // Open WhatsApp in new tab
-      window.open(whatsappUrl, '_blank');
-      
+      window.open(whatsappUrl, "_blank");
+
       return true;
     } catch (error) {
       console.error("Failed to send WhatsApp message:", error);
@@ -558,23 +614,37 @@ export default function AdminDashboard() {
 
   const acceptOrder = async (id) => {
     try {
-      const order = orders.find(o => o.id === id);
+      const order = orders.find((o) => o.id === id);
       if (!order) {
         showNotification("Order not found", "error");
         return;
       }
 
       await updateDoc(doc(db, "orders", id), { status: "accepted" });
-      
+
       // Send WhatsApp notification
       if (order.billingMobile) {
-        const orderDetails = order.items?.map(item => 
-          `• ${item.itemName || item.name || 'Unnamed item'} - ₹${Number(item.price || 0).toFixed(2)} × ${item.quantity || 0} = ₹${(Number(item.price || 0) * Number(item.quantity || 0)).toFixed(2)}`
-        ).join('\n') || 'No items';
-        
-        const total = order.total || order.items?.reduce((sum, item) => 
-          sum + (Number(item.price || 0) * Number(item.quantity || 0)), 0) || 0;
-        
+        const orderDetails =
+          order.items
+            ?.map(
+              (item) =>
+                `• ${item.itemName || item.name || "Unnamed item"} - ₹${Number(
+                  item.price || 0
+                ).toFixed(2)} × ${item.quantity || 0} = ₹${(
+                  Number(item.price || 0) * Number(item.quantity || 0)
+                ).toFixed(2)}`
+            )
+            .join("\n") || "No items";
+
+        const total =
+          order.total ||
+          order.items?.reduce(
+            (sum, item) =>
+              sum + Number(item.price || 0) * Number(item.quantity || 0),
+            0
+          ) ||
+          0;
+
         const message = `🍽️ *Asif's Briyani - Order Accepted!* 🎉
 
 *Order ID:* ${order.orderID || `#${id}`}
@@ -595,7 +665,7 @@ For any queries, contact us at our restaurant.`;
 
         await sendWhatsAppMessage(order.billingMobile, message);
       }
-      
+
       showNotification("Order accepted and WhatsApp notification sent!");
     } catch (e) {
       console.error("[AdminDashboard] Failed to accept order:", e);
@@ -606,14 +676,14 @@ For any queries, contact us at our restaurant.`;
   const rejectOrder = async (id) => {
     if (confirm("Are you sure you want to reject this order?")) {
       try {
-        const order = orders.find(o => o.id === id);
+        const order = orders.find((o) => o.id === id);
         if (!order) {
           showNotification("Order not found", "error");
           return;
         }
 
         await updateDoc(doc(db, "orders", id), { status: "rejected" });
-        
+
         // Send WhatsApp notification
         if (order.billingMobile) {
           const message = `🍽️ *Asif's Briyani - Order Update* 
@@ -638,7 +708,7 @@ Thank you for considering Asif's Briyani! 🙏`;
 
           await sendWhatsAppMessage(order.billingMobile, message);
         }
-        
+
         showNotification("Order rejected and WhatsApp notification sent!");
       } catch (e) {
         console.error("[AdminDashboard] Failed to reject order:", e);
@@ -686,7 +756,9 @@ Thank you for considering Asif's Briyani! 🙏`;
             <span className="font-semibold">Administrator</span>
             <button
               onClick={() => {
-                try { localStorage.removeItem("isAdminAuthed"); } catch {}
+                try {
+                  localStorage.removeItem("isAdminAuthed");
+                } catch {}
                 router.push("/adminlogin");
               }}
               className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-semibold flex items-center"
@@ -812,6 +884,17 @@ Thank you for considering Asif's Briyani! 🙏`;
               <FaTag className="mr-2" />
               Discount
             </button>
+            <button
+              className={`px-6 py-3 font-semibold transition-all duration-200 flex items-center ${
+                activeTab === "enquiry"
+                  ? "bg-gradient-to-br from-yellow-400 to-yellow-300 text-black"
+                  : "text-yellow-400 hover:bg-yellow-400 hover:text-black"
+              }`}
+              onClick={() => setActiveTab("enquiry")}
+            >
+              <FaEnvelope className="mr-2" />
+              Enquiry
+            </button>
           </div>
         </div>
       </nav>
@@ -896,7 +979,9 @@ Thank you for considering Asif's Briyani! 🙏`;
                   <div className="mt-3">
                     <ImageUploader
                       buttonLabel="Upload Image to Cloudinary"
-                      onUploadComplete={(url) => setFormData({ ...formData, photoUrl: url })}
+                      onUploadComplete={(url) =>
+                        setFormData({ ...formData, photoUrl: url })
+                      }
                     />
                   </div>
                 </div>
@@ -1003,7 +1088,9 @@ Thank you for considering Asif's Briyani! 🙏`;
         {activeTab === "orders" && (
           <div className="space-y-4">
             <div className="flex items-center justify-end">
-              <label className="mr-3 text-yellow-400 font-semibold">Filter by date</label>
+              <label className="mr-3 text-yellow-400 font-semibold">
+                Filter by date
+              </label>
               <input
                 type="date"
                 value={pendingDate}
@@ -1013,8 +1100,8 @@ Thank you for considering Asif's Briyani! 🙏`;
             </div>
             {orders
               .filter((o) => (o.status || "pending") === "pending")
-              .filter((o) => isSameDayAs(o.createdAt, pendingDate))
-              .length === 0 ? (
+              .filter((o) => isSameDayAs(o.createdAt, pendingDate)).length ===
+            0 ? (
               <div className="text-center py-8 text-gray-400">
                 <FaShoppingCart className="text-4xl mb-2 mx-auto" />
                 <p>
@@ -1061,10 +1148,11 @@ Thank you for considering Asif's Briyani! 🙏`;
                           Customer Information
                         </h4>
                         <p className="text-white">
-                          <strong>Name:</strong> {order.billingName || order.name}
+                          <strong>Name:</strong>{" "}
+                          {order.billingName || order.name}
                         </p>
                         <p className="text-gray-300 mt-1">
-                          <strong>Mobile:</strong> {order.billingMobile || '—'}
+                          <strong>Mobile:</strong> {order.billingMobile || "—"}
                         </p>
                         <p className="text-gray-300 mt-2">
                           <strong>Address:</strong> {order.address}
@@ -1103,23 +1191,41 @@ Thank you for considering Asif's Briyani! 🙏`;
                         </div>
                         <div className="mt-4 pt-3 border-t border-gray-600">
                           <div className="flex justify-between items-center">
-                            <span className="text-white font-semibold text-lg">Total:</span>
+                            <span className="text-white font-semibold text-lg">
+                              Total:
+                            </span>
                             {(() => {
                               const pct = Number(discountPercent) || 0;
-                              const baseTotal = order.total != null
-                                ? Number(order.total)
-                                : (order.items || []).reduce(
-                                    (total, it) => total + Number(it.price || 0) * Number(it.quantity || 0),
-                                    0
-                                  );
-                              const discounted = Math.max(0, baseTotal * (1 - pct / 100));
+                              const baseTotal =
+                                order.total != null
+                                  ? Number(order.total)
+                                  : (order.items || []).reduce(
+                                      (total, it) =>
+                                        total +
+                                        Number(it.price || 0) *
+                                          Number(it.quantity || 0),
+                                      0
+                                    );
+                              const discounted = Math.max(
+                                0,
+                                baseTotal * (1 - pct / 100)
+                              );
                               return pct > 0 ? (
                                 <div className="text-right">
-                                  <div className="text-gray-400 line-through">₹{baseTotal.toFixed(2)}</div>
-                                  <div className="text-yellow-400 font-bold text-xl">₹{discounted.toFixed(2)} <span className="text-xs text-green-400">({pct}% off)</span></div>
+                                  <div className="text-gray-400 line-through">
+                                    ₹{baseTotal.toFixed(2)}
+                                  </div>
+                                  <div className="text-yellow-400 font-bold text-xl">
+                                    ₹{discounted.toFixed(2)}{" "}
+                                    <span className="text-xs text-green-400">
+                                      ({pct}% off)
+                                    </span>
+                                  </div>
                                 </div>
                               ) : (
-                                <span className="text-yellow-400 font-bold text-xl">₹{baseTotal.toFixed(2)}</span>
+                                <span className="text-yellow-400 font-bold text-xl">
+                                  ₹{baseTotal.toFixed(2)}
+                                </span>
                               );
                             })()}
                           </div>
@@ -1134,7 +1240,9 @@ Thank you for considering Asif's Briyani! 🙏`;
         {activeTab === "history" && (
           <div className="space-y-4">
             <div className="flex items-center">
-              <label className="mr-3 text-yellow-400 font-semibold">Filter by date</label>
+              <label className="mr-3 text-yellow-400 font-semibold">
+                Filter by date
+              </label>
               <input
                 type="date"
                 value={historyDate}
@@ -1144,8 +1252,8 @@ Thank you for considering Asif's Briyani! 🙏`;
             </div>
             {orders
               .filter((o) => (o.status || "pending") !== "pending")
-              .filter((o) => isSameDayAs(o.createdAt, historyDate))
-              .length === 0 ? (
+              .filter((o) => isSameDayAs(o.createdAt, historyDate)).length ===
+            0 ? (
               <div className="text-center py-8 text-gray-400">
                 <FaList className="text-4xl mb-2 mx-auto" />
                 <p>No order history yet.</p>
@@ -1172,64 +1280,101 @@ Thank you for considering Asif's Briyani! 🙏`;
                           <h3 className="text-xl font-bold text-yellow-400">
                             {order.orderID || `Order #${order.id}`}
                           </h3>
-                          <p className="text-gray-400 text-sm">{formatDate(order.createdAt)}</p>
+                          <p className="text-gray-400 text-sm">
+                            {formatDate(order.createdAt)}
+                          </p>
                         </div>
-                        <span className={`px-3 py-1 rounded-full text-sm font-semibold ${badge}`}>
+                        <span
+                          className={`px-3 py-1 rounded-full text-sm font-semibold ${badge}`}
+                        >
                           {status.charAt(0).toUpperCase() + status.slice(1)}
                         </span>
                       </div>
                       <div className="grid md:grid-cols-2 gap-6">
                         <div>
-                          <h4 className="font-semibold text-yellow-400 mb-2">Customer Information</h4>
+                          <h4 className="font-semibold text-yellow-400 mb-2">
+                            Customer Information
+                          </h4>
                           <p className="text-white">
-                            <strong>Name:</strong> {order.billingName || order.name}
+                            <strong>Name:</strong>{" "}
+                            {order.billingName || order.name}
                           </p>
                           <p className="text-gray-300 mt-1">
-                            <strong>Mobile:</strong> {order.billingMobile || '—'}
+                            <strong>Mobile:</strong>{" "}
+                            {order.billingMobile || "—"}
                           </p>
                           <p className="text-gray-300 mt-2">
                             <strong>Address:</strong> {order.address}
                           </p>
                         </div>
                         <div>
-                          <h4 className="font-semibold text-yellow-400 mb-2">Order Items</h4>
+                          <h4 className="font-semibold text-yellow-400 mb-2">
+                            Order Items
+                          </h4>
                           <div className="space-y-2">
                             {order.items?.map((i, idx) => {
                               const itemPrice = Number(i.price || 0);
                               const qty = Number(i.quantity || 0);
                               const itemTotal = itemPrice * qty;
                               return (
-                                <div key={idx} className="flex justify-between items-center bg-gray-700 p-3 rounded">
+                                <div
+                                  key={idx}
+                                  className="flex justify-between items-center bg-gray-700 p-3 rounded"
+                                >
                                   <div className="flex-1">
-                                    <span className="text-white font-semibold">{i.itemName || i.name || "Unnamed item"}</span>
+                                    <span className="text-white font-semibold">
+                                      {i.itemName || i.name || "Unnamed item"}
+                                    </span>
                                     <div className="text-sm text-gray-300">
-                                      <span>₹{itemPrice.toFixed(2)} × {qty}</span>
+                                      <span>
+                                        ₹{itemPrice.toFixed(2)} × {qty}
+                                      </span>
                                     </div>
                                   </div>
-                                  <span className="text-yellow-400 font-bold">₹{itemTotal.toFixed(2)}</span>
+                                  <span className="text-yellow-400 font-bold">
+                                    ₹{itemTotal.toFixed(2)}
+                                  </span>
                                 </div>
                               );
                             })}
                           </div>
                           <div className="mt-4 pt-3 border-t border-gray-600">
                             <div className="flex justify-between items-center">
-                              <span className="text-white font-semibold text-lg">Total:</span>
+                              <span className="text-white font-semibold text-lg">
+                                Total:
+                              </span>
                               {(() => {
                                 const pct = Number(discountPercent) || 0;
-                                const baseTotal = order.total != null
-                                  ? Number(order.total)
-                                  : (order.items || []).reduce(
-                                      (total, it) => total + Number(it.price || 0) * Number(it.quantity || 0),
-                                      0
-                                    );
-                                const discounted = Math.max(0, baseTotal * (1 - pct / 100));
+                                const baseTotal =
+                                  order.total != null
+                                    ? Number(order.total)
+                                    : (order.items || []).reduce(
+                                        (total, it) =>
+                                          total +
+                                          Number(it.price || 0) *
+                                            Number(it.quantity || 0),
+                                        0
+                                      );
+                                const discounted = Math.max(
+                                  0,
+                                  baseTotal * (1 - pct / 100)
+                                );
                                 return pct > 0 ? (
                                   <div className="text-right">
-                                    <div className="text-gray-400 line-through">₹{baseTotal.toFixed(2)}</div>
-                                    <div className="text-yellow-400 font-bold text-xl">₹{discounted.toFixed(2)} <span className="text-xs text-green-400">({pct}% off)</span></div>
+                                    <div className="text-gray-400 line-through">
+                                      ₹{baseTotal.toFixed(2)}
+                                    </div>
+                                    <div className="text-yellow-400 font-bold text-xl">
+                                      ₹{discounted.toFixed(2)}{" "}
+                                      <span className="text-xs text-green-400">
+                                        ({pct}% off)
+                                      </span>
+                                    </div>
                                   </div>
                                 ) : (
-                                  <span className="text-yellow-400 font-bold text-xl">₹{baseTotal.toFixed(2)}</span>
+                                  <span className="text-yellow-400 font-bold text-xl">
+                                    ₹{baseTotal.toFixed(2)}
+                                  </span>
                                 );
                               })()}
                             </div>
@@ -1245,10 +1390,17 @@ Thank you for considering Asif's Briyani! 🙏`;
         {activeTab === "locations" && (
           <div className="space-y-4">
             <div className="bg-gray-900 rounded-lg p-6 border border-yellow-500 shadow-lg">
-              <h3 className="text-xl font-bold text-yellow-400 mb-4">Service Area</h3>
-              <p className="text-gray-300 mb-4">Step 1: Fetch current location (hotel). Step 2: Set delivery distance (km).</p>
+              <h3 className="text-xl font-bold text-yellow-400 mb-4">
+                Service Area
+              </h3>
+              <p className="text-gray-300 mb-4">
+                Step 1: Fetch current location (hotel). Step 2: Set delivery
+                distance (km).
+              </p>
               <div className="mb-4">
-                <label className="block text-yellow-400 font-semibold mb-2">Search city (optional)</label>
+                <label className="block text-yellow-400 font-semibold mb-2">
+                  Search city (optional)
+                </label>
                 <input
                   type="text"
                   value={cityQuery}
@@ -1298,7 +1450,9 @@ Thank you for considering Asif's Briyani! 🙏`;
                 <div className="text-xs text-gray-400 mb-2">{locMessage}</div>
               )}
               <div className="max-w-sm">
-                <label className="block text-yellow-400 font-semibold mb-2">Delivery radius (km)</label>
+                <label className="block text-yellow-400 font-semibold mb-2">
+                  Delivery radius (km)
+                </label>
                 <input
                   type="number"
                   min="1"
@@ -1324,9 +1478,15 @@ Thank you for considering Asif's Briyani! 🙏`;
         {activeTab === "discount" && (
           <div className="space-y-4">
             <div className="bg-gray-900 rounded-lg p-6 border border-yellow-500 shadow-lg max-w-md">
-              <h3 className="text-xl font-bold text-yellow-400 mb-2">Global Discount</h3>
-              <p className="text-gray-300 mb-4">Set a percentage discount applied to all items for users.</p>
-              <label className="block text-yellow-400 font-semibold mb-2">Discount (%)</label>
+              <h3 className="text-xl font-bold text-yellow-400 mb-2">
+                Global Discount
+              </h3>
+              <p className="text-gray-300 mb-4">
+                Set a percentage discount applied to all items for users.
+              </p>
+              <label className="block text-yellow-400 font-semibold mb-2">
+                Discount (%)
+              </label>
               <input
                 type="number"
                 min="0"
@@ -1344,7 +1504,209 @@ Thank you for considering Asif's Briyani! 🙏`;
                 >
                   Save
                 </button>
-                <span className="text-sm text-gray-400">Current: {Number(discountPercent) || 0}%</span>
+                <span className="text-sm text-gray-400">
+                  Current: {Number(discountPercent) || 0}%
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+        {activeTab === "enquiry" && (
+          <div className="space-y-4">
+            <div className="bg-gray-900 rounded-lg border border-yellow-500 shadow-lg">
+              <div className="p-6">
+                <h2 className="text-2xl font-bold text-yellow-400 mb-6 flex items-center">
+                  <FaEnvelope className="mr-3" />
+                  Customer Inquiries ({inquiries.length})
+                </h2>
+
+                {/* Date Picker */}
+                <div className="flex items-center mb-4">
+                  <label className="mr-3 text-yellow-400 font-semibold">
+                    Filter by date
+                  </label>
+                  <input
+                    type="date"
+                    value={inquiryDate}
+                    onChange={(e) => setInquiryDate(e.target.value)}
+                    className="bg-gray-800 border border-gray-700 text-white px-3 py-2 rounded"
+                  />
+                </div>
+
+                {inquiries.filter((inquiry) =>
+                  isSameDayAs(inquiry.createdAt, inquiryDate)
+                ).length === 0 ? (
+                  <div className="text-center py-8 text-gray-400">
+                    <FaEnvelope className="text-4xl mb-2 mx-auto" />
+                    <p>No inquiries found for this date.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {inquiries
+                      .filter((inquiry) =>
+                        isSameDayAs(inquiry.createdAt, inquiryDate)
+                      )
+                      .map((inquiry) => (
+                        <div
+                          key={inquiry.id}
+                          className="bg-gray-800 p-6 rounded-lg border border-gray-700 hover:border-yellow-500 transition-colors"
+                        >
+                          <div className="flex justify-between items-start mb-4">
+                            <div className="flex items-center space-x-3">
+                              {inquiry.type === "wedding" ? (
+                                <FaHeart className="text-pink-400 text-xl" />
+                              ) : (
+                                <FaEnvelope className="text-blue-400 text-xl" />
+                              )}
+                              <div>
+                                <h3 className="text-xl font-bold text-yellow-400">
+                                  {inquiry.type === "wedding"
+                                    ? "Wedding Inquiry"
+                                    : "Contact Inquiry"}
+                                </h3>
+                                <p className="text-gray-400 text-sm">
+                                  {formatDate(inquiry.createdAt)}
+                                </p>
+                              </div>
+                            </div>
+                            <span
+                              className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                                inquiry.status === "new"
+                                  ? "bg-yellow-400 text-black"
+                                  : inquiry.status === "contacted"
+                                  ? "bg-green-600 text-white"
+                                  : "bg-gray-600 text-white"
+                              }`}
+                            >
+                              {inquiry.status?.charAt(0).toUpperCase() +
+                                inquiry.status?.slice(1) || "New"}
+                            </span>
+                          </div>
+
+                          <div className="grid md:grid-cols-2 gap-6">
+                            <div>
+                              <h4 className="font-semibold text-yellow-400 mb-3 flex items-center">
+                                <FaUserShield className="mr-2" />
+                                Contact Information
+                              </h4>
+
+                              {inquiry.type === "wedding" ? (
+                                <div className="space-y-2">
+                                  <p className="text-white">
+                                    <strong>Bride:</strong>{" "}
+                                    {inquiry.brideName || "—"}
+                                  </p>
+                                  <p className="text-white">
+                                    <strong>Groom:</strong>{" "}
+                                    {inquiry.groomName || "—"}
+                                  </p>
+                                  <p className="text-gray-300">
+                                    <MdPhone className="inline mr-1" />
+                                    <strong>Phone:</strong>{" "}
+                                    {inquiry.contactNumber || "—"}
+                                  </p>
+                                  <p className="text-gray-300">
+                                    <FaEnvelope className="inline mr-1" />
+                                    <strong>Email:</strong>{" "}
+                                    {inquiry.email || "—"}
+                                  </p>
+                                </div>
+                              ) : (
+                                <div className="space-y-2">
+                                  <p className="text-white">
+                                    <strong>Name:</strong> {inquiry.name || "—"}
+                                  </p>
+                                  <p className="text-gray-300">
+                                    <FaEnvelope className="inline mr-1" />
+                                    <strong>Email:</strong>{" "}
+                                    {inquiry.email || "—"}
+                                  </p>
+                                  <p className="text-gray-300">
+                                    <strong>Subject:</strong>{" "}
+                                    {inquiry.subject || "—"}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+
+                            <div>
+                              <h4 className="font-semibold text-yellow-400 mb-3 flex items-center">
+                                {inquiry.type === "wedding" ? (
+                                  <>
+                                    <FaCalendarAlt className="mr-2" />
+                                    Wedding Details
+                                  </>
+                                ) : (
+                                  <>
+                                    <FaEnvelope className="mr-2" />
+                                    Message
+                                  </>
+                                )}
+                              </h4>
+
+                              {inquiry.type === "wedding" ? (
+                                <div className="space-y-2">
+                                  <p className="text-white">
+                                    <FaCalendarAlt className="inline mr-1" />
+                                    <strong>Date:</strong>{" "}
+                                    {inquiry.weddingDate || "—"}
+                                  </p>
+                                  <p className="text-white">
+                                    <FaUsers className="inline mr-1" />
+                                    <strong>Guests:</strong>{" "}
+                                    {inquiry.numberOfGuests || "—"}
+                                  </p>
+                                  <p className="text-gray-300">
+                                    <FaMapPin className="inline mr-1" />
+                                    <strong>Venue:</strong>{" "}
+                                    {inquiry.venueDetails || "—"}
+                                  </p>
+                                </div>
+                              ) : (
+                                <div className="text-gray-300">
+                                  <p className="whitespace-pre-wrap">
+                                    {inquiry.message || "—"}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="mt-4 pt-4 border-t border-gray-600">
+                            <div className="flex space-x-2">
+                              <button
+                                onClick={() => {
+                                  if (inquiry.contactNumber) {
+                                    const phoneNumber =
+                                      inquiry.contactNumber.replace(/\D/g, "");
+                                    const whatsappUrl = `https://wa.me/91${phoneNumber}`;
+                                    window.open(whatsappUrl, "_blank");
+                                  }
+                                }}
+                                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-semibold flex items-center"
+                                disabled={!inquiry.contactNumber}
+                              >
+                                <MdPhone className="mr-2" /> {/* <-- FIXED */}
+                                WhatsApp
+                              </button>
+                              <button
+                                onClick={() => {
+                                  if (inquiry.email) {
+                                    window.location.href = `mailto:${inquiry.email}`;
+                                  }
+                                }}
+                                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold flex items-center"
+                                disabled={!inquiry.email}
+                              >
+                                <FaEnvelope className="mr-2" />
+                                Email
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>

@@ -6,7 +6,7 @@ import { FaMinus, FaPlus } from "react-icons/fa";
 import { useCart } from "./CartContext";
 import { db } from "../../lib/firebase";
 import { collection, getDocs, doc, getDoc } from "firebase/firestore";
-import FeaturedMenu from "./FeaturedMenu";
+
 
 export default function MenuPage() {
   const [menuItems, setMenuItems] = useState([]);
@@ -125,7 +125,6 @@ export default function MenuPage() {
   // If shop is open, show menu
   return (
     <section className="pt-24 pb-16 bg-black text-white">
-      <FeaturedMenu />
       <div className="container mx-auto px-4">
         {/* Heading */}
         <h2 className="text-5xl font-bold text-center text-yellow-400 mb-12 drop-shadow-lg">
