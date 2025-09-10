@@ -52,10 +52,10 @@ export default function Navbar() {
   return (
     <>
       <nav className="fixed top-0 w-full z-40 backdrop-blur-xl bg-black/30 border-b border-yellow-500/10 transition-all duration-300">
-        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="container mx-auto px-3 sm:px-6 py-4 flex items-center justify-between">
           {/* Logo */}
           <div className="flex items-center space-x-2">
-            <h1 className="text-2xl font-playfair font-bold bg-clip-text text-transparent bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-400">
+            <h1 className="text-xl sm:text-2xl font-playfair font-bold bg-clip-text text-transparent bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-400">
               Asif Bhai&apos;s Biryani
             </h1>
           </div>
@@ -70,7 +70,7 @@ export default function Navbar() {
               </Link>
             ))}
           </div>
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 sm:space-x-4">
             <Link
               href="/orders"
               className="text-white hover:text-yellow-400 relative"
@@ -116,50 +116,94 @@ export default function Navbar() {
               )}
             </Link>
             {user ? (
-              <>
-                <span className="text-yellow-400 font-semibold">
-                  {user.name || user.displayName}
-                </span>
-                <button
-                  onClick={() => {
-                    logOut();
-                    setUser(null);
-                  }}
-                  className="bg-gradient-to-r from-yellow-400 to-yellow-600 text-black px-6 py-2 rounded-full font-semibold hover:shadow-lg hover:shadow-yellow-400/25 transition-all"
-                >
-                  Logout
-                </button>
-              </>
+              <span className="text-yellow-400 font-semibold hidden lg:block">
+                {user.name || user.displayName}
+              </span>
+            ) : null}
+            {/* Login/Logout button only on desktop */}
+            {user ? (
+              <button
+                onClick={() => {
+                  logOut();
+                  setUser(null);
+                }}
+                className="bg-gradient-to-r from-yellow-400 to-yellow-600 text-black px-6 py-2 rounded-full font-semibold hover:shadow-lg hover:shadow-yellow-400/25 transition-all hidden lg:block"
+              >
+                Logout
+              </button>
             ) : (
               <button
                 onClick={() => setShowAuthForm(true)}
-                className="bg-gradient-to-r from-yellow-400 to-yellow-600 text-black px-6 py-2 rounded-full font-semibold hover:shadow-lg hover:shadow-yellow-400/25 transition-all"
+                className="bg-gradient-to-r from-yellow-400 to-yellow-600 text-black px-6 py-2 rounded-full font-semibold hover:shadow-lg hover:shadow-yellow-400/25 transition-all hidden lg:block"
               >
                 Login
               </button>
             )}
+            {/* Mobile hamburger menu icon button */}
             <button
-              className="lg:hidden text-white"
+              className="block lg:hidden text-yellow-400 p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-yellow-400"
               onClick={() => setMobileOpen(true)}
+              aria-label="Open menu"
             >
-              <i className="fa-solid fa-bars text-xl" />
+              {/* Hamburger icon SVG */}
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-7 w-7"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <line
+                  x1="4"
+                  y1="7"
+                  x2="20"
+                  y2="7"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                />
+                <line
+                  x1="4"
+                  y1="12"
+                  x2="20"
+                  y2="12"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                />
+                <line
+                  x1="4"
+                  y1="17"
+                  x2="20"
+                  y2="17"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                />
+              </svg>
             </button>
           </div>
         </div>
       </nav>
+      {/* Mobile Menu Overlay */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
       <div
-        className={`fixed top-0 right-0 h-full w-64 bg-black/90 backdrop-blur-xl z-50 transform ${
+        className={`fixed top-0 right-0 h-full w-full sm:w-80 bg-black/90 backdrop-blur-xl z-50 transform ${
           mobileOpen ? "translate-x-0" : "translate-x-full"
         } transition-transform duration-300`}
+        style={{ maxWidth: "100vw" }}
       >
         <div className="p-6">
           <button
-            className="float-right text-white mb-8"
+            className="float-right text-white mb-8 p-2 rounded focus:outline-none focus:ring-2 focus:ring-yellow-400"
             onClick={() => setMobileOpen(false)}
+            aria-label="Close menu"
           >
             <i className="fa-solid fa-xmark text-xl" />
           </button>
-
           <div className="space-y-6 mt-16">
             {links.map((item) => (
               <Link

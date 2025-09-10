@@ -91,6 +91,17 @@ export default function AdminDashboard() {
   const alertStopRef = useRef(null);
   const audioRef = useRef(null);
   const [soundEnabled, setSoundEnabled] = useState(false);
+  const [confirmState, setConfirmState] = useState({
+    open: false,
+    title: "",
+    message: "",
+    confirmText: "OK",
+    cancelText: "Cancel",
+    theme: "danger",
+    icon: "",
+    onConfirm: null,
+  });
+  const [confirmLoading, setConfirmLoading] = useState(false);
 
   const formatDate = (ts) => {
     if (!ts) return "";
@@ -489,6 +500,14 @@ export default function AdminDashboard() {
     }
   };
 
+  const openConfirm = ({ title, message, confirmText = "OK", cancelText = "Cancel", theme = "danger", icon = "", onConfirm }) => {
+    setConfirmState({ open: true, title, message, confirmText, cancelText, theme, icon, onConfirm });
+  };
+  const closeConfirm = () => {
+    setConfirmLoading(false);
+    setConfirmState((s) => ({ ...s, open: false }));
+  };
+
   useEffect(() => {
     const today = new Date().toISOString().slice(0, 10);
     const pendingToday = (orders || [])
@@ -571,15 +590,23 @@ export default function AdminDashboard() {
   };
 
   const handleDeleteItem = async (id) => {
-    if (confirm("Are you sure you want to delete this item?")) {
-      try {
-        await deleteDoc(doc(db, "menuItems", id));
-        showNotification("Item deleted successfully!");
-      } catch (error) {
-        console.error("[AdminDashboard] Failed to delete item:", error);
-        showNotification("Failed to delete item", "error");
-      }
-    }
+    openConfirm({
+      title: "Delete Item",
+      message: "Are you sure you want to delete this item? This action cannot be undone.",
+      confirmText: "Delete",
+      cancelText: "Cancel",
+      theme: "danger",
+      icon: "trash",
+      onConfirm: async () => {
+        try {
+          await deleteDoc(doc(db, "menuItems", id));
+          showNotification("Item deleted successfully!");
+        } catch (error) {
+          console.error("[AdminDashboard] Failed to delete item:", error);
+          showNotification("Failed to delete item", "error");
+        }
+      },
+    });
   };
 
   const sendWhatsAppMessage = async (mobileNumber, message) => {
@@ -669,47 +696,37 @@ For any queries, contact us at our restaurant.`;
   };
 
   const rejectOrder = async (id) => {
-    if (confirm("Are you sure you want to reject this order?")) {
-      try {
-        const order = orders.find((o) => o.id === id);
-        if (!order) {
-          showNotification("Order not found", "error");
-          return;
-        }
-
-        await updateDoc(doc(db, "orders", id), { status: "rejected" });
-
-        // Send WhatsApp notification
-        if (order.billingMobile) {
-          const message = `🍽️ *Asif's Briyani - Order Update* 
-
-*Order ID:* ${order.orderID || `#${id}`}
-*Status:* ❌ REJECTED
-
-Dear ${order.billingName || order.name},
-
-We regret to inform you that your order has been rejected. This could be due to:
-• Item unavailability
-• Delivery area restrictions
-• Restaurant capacity
-
-*Order Details:*
-• Order Time: ${formatDate(order.createdAt)}
-• Delivery Address: ${order.address}
-
-We apologize for any inconvenience caused. Please feel free to place a new order or contact us for assistance.
-
-Thank you for considering Asif's Briyani! 🙏`;
-
-          await sendWhatsAppMessage(order.billingMobile, message);
-        }
-
-        showNotification("Order rejected and WhatsApp notification sent!");
-      } catch (e) {
-        console.error("[AdminDashboard] Failed to reject order:", e);
-        showNotification("Failed to reject order", "error");
-      }
+    const order = orders.find((o) => o.id === id);
+    if (!order) {
+      showNotification("Order not found", "error");
+      return;
     }
+
+    openConfirm({
+      title: "Reject Order",
+      message: "Are you sure you want to reject this order?",
+      confirmText: "Reject",
+      cancelText: "Cancel",
+      theme: "danger",
+      icon: "times",
+      onConfirm: async () => {
+        try {
+          await updateDoc(doc(db, "orders", id), { status: "rejected" });
+
+          // Send WhatsApp notification
+          if (order.billingMobile) {
+            const message = `🍽️ *Asif's Briyani - Order Update* \n\n*Order ID:* ${order.orderID || `#${id}`}\n*Status:* ❌ REJECTED\n\nDear ${order.billingName || order.name},\n\nWe regret to inform you that your order has been rejected. This could be due to:\n• Item unavailability\n• Delivery area restrictions\n• Restaurant capacity\n\n*Order Details:*\n• Order Time: ${formatDate(order.createdAt)}\n• Delivery Address: ${order.address}\n\nWe apologize for any inconvenience caused. Please feel free to place a new order or contact us for assistance.\n\nThank you for considering Asif's Briyani! 🙏`;
+
+            await sendWhatsAppMessage(order.billingMobile, message);
+          }
+
+          showNotification("Order rejected and WhatsApp notification sent!");
+        } catch (e) {
+          console.error("[AdminDashboard] Failed to reject order:", e);
+          showNotification("Failed to reject order", "error");
+        }
+      },
+    });
   };
 
   return (
@@ -740,159 +757,176 @@ Thank you for considering Asif's Briyani! 🙏`;
           {notification.message}
         </div>
       )}
-      <header className="bg-gradient-to-br from-yellow-400 to-yellow-300 text-black p-4 shadow-lg">
-        <div className="container mx-auto flex justify-between items-center">
-          <div className="flex items-center space-x-3">
-            <FaUtensils className="text-2xl" />
-            <h1 className="text-2xl font-bold">Super Briyani Admin</h1>
-          </div>
-          <div className="flex items-center space-x-4">
-            <FaUserShield className="text-xl" />
-            <span className="font-semibold">Administrator</span>
-            <button
-              onClick={() => {
-                try {
-                  localStorage.removeItem("isAdminAuthed");
-                } catch {}
-                router.push("/adminlogin");
-              }}
-              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-semibold flex items-center"
-            >
-              <FaSignOutAlt className="mr-2" />
-              Logout
-            </button>
-          </div>
-        </div>
-        {/* Shop Open Toggle */}
-        <div className="flex items-center justify-end mt-4">
-          <span className="mr-3 font-semibold text-lg">
-            Shop Status:
-            <span
-              className={
-                isShopOpen ? "text-green-700 ml-2" : "text-red-700 ml-2"
-              }
-            >
-              {isShopOpen ? "Open" : "Closed"}
-            </span>
-          </span>
-          <label className="flex items-center cursor-pointer">
-            <div className="relative">
-              <input
-                type="checkbox"
-                checked={isShopOpen}
-                onChange={async (e) => {
-                  if (!shopDocId) return;
-                  const newStatus = e.target.checked;
-                  setIsShopOpen(newStatus);
-                  await updateDoc(doc(db, "shop", shopDocId), {
-                    IsOpen: newStatus,
-                  });
-                  showNotification(
-                    `Shop is now ${newStatus ? "Open" : "Closed"}`
-                  );
-                }}
-                className="sr-only"
-              />
-              <div
-                className={`block w-14 h-8 rounded-full ${
-                  isShopOpen ? "bg-green-400" : "bg-red-400"
-                }`}
-              ></div>
-              <div
-                className={`dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition ${
-                  isShopOpen ? "translate-x-6" : ""
-                }`}
-              ></div>
+      <div className="sticky md:static top-0 z-40">
+        <header className="bg-gradient-to-br from-yellow-400 to-yellow-300 text-black p-4 shadow-lg">
+          <div className="container mx-auto flex flex-col sm:flex-row justify-between items-center gap-3">
+            <div className="flex items-center space-x-3">
+              <FaUtensils className="text-3xl p-2 bg-black/10 rounded-xl shadow-sm" />
+              <div className="leading-tight">
+                <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">
+                  Super Briyani Admin
+                </h1>
+                <p className="text-xs md:text-sm font-semibold opacity-70 -mt-0.5">
+                  Dashboard
+                </p>
+              </div>
             </div>
-            <span className="ml-3 text-black font-bold">
-              {isShopOpen ? "Open" : "Closed"}
-            </span>
-          </label>
-        </div>
-      </header>
-      <nav className="bg-gray-900 border-b border-yellow-500">
-        <div className="container mx-auto px-4">
-          <div className="flex space-x-1">
-            <button
-              className={`px-6 py-3 font-semibold transition-all duration-200 flex items-center ${
-                activeTab === "add-item"
-                  ? "bg-gradient-to-br from-yellow-400 to-yellow-300 text-black"
-                  : "text-yellow-400 hover:bg-yellow-400 hover:text-black"
-              }`}
-              onClick={() => setActiveTab("add-item")}
-            >
-              <FaPlus className="mr-2" />
-              Add Item
-            </button>
-            <button
-              className={`px-6 py-3 font-semibold transition-all duration-200 flex items-center ${
-                activeTab === "view-items"
-                  ? "bg-gradient-to-br from-yellow-400 to-yellow-300 text-black"
-                  : "text-yellow-400 hover:bg-yellow-400 hover:text-black"
-              }`}
-              onClick={() => setActiveTab("view-items")}
-            >
-              <FaList className="mr-2" />
-              View Items
-            </button>
-            <button
-              className={`px-6 py-3 font-semibold transition-all duration-200 flex items-center ${
-                activeTab === "orders"
-                  ? "bg-gradient-to-br from-yellow-400 to-yellow-300 text-black"
-                  : "text-yellow-400 hover:bg-yellow-400 hover:text-black"
-              }`}
-              onClick={() => setActiveTab("orders")}
-            >
-              <FaShoppingCart className="mr-2" />
-              Pending Orders
-            </button>
-            <button
-              className={`px-6 py-3 font-semibold transition-all duration-200 flex items-center ${
-                activeTab === "history"
-                  ? "bg-gradient-to-br from-yellow-400 to-yellow-300 text-black"
-                  : "text-yellow-400 hover:bg-yellow-400 hover:text-black"
-              }`}
-              onClick={() => setActiveTab("history")}
-            >
-              <FaList className="mr-2" />
-              Order History
-            </button>
-            <button
-              className={`px-6 py-3 font-semibold transition-all duration-200 flex items-center ${
-                activeTab === "locations"
-                  ? "bg-gradient-to-br from-yellow-400 to-yellow-300 text-black"
-                  : "text-yellow-400 hover:bg-yellow-400 hover:text-black"
-              }`}
-              onClick={() => setActiveTab("locations")}
-            >
-              <FaMapMarkerAlt className="mr-2" />
-              Locations
-            </button>
-            <button
-              className={`px-6 py-3 font-semibold transition-all duration-200 flex items-center ${
-                activeTab === "discount"
-                  ? "bg-gradient-to-br from-yellow-400 to-yellow-300 text-black"
-                  : "text-yellow-400 hover:bg-yellow-400 hover:text-black"
-              }`}
-              onClick={() => setActiveTab("discount")}
-            >
-              <FaTag className="mr-2" />
-              Discount
-            </button>
-            <button
-              className={`px-6 py-3 font-semibold transition-all duration-200 flex items-center ${
-                activeTab === "enquiry"
-                  ? "bg-gradient-to-br from-yellow-400 to-yellow-300 text-black"
-                  : "text-yellow-400 hover:bg-yellow-400 hover:text-black"
-              }`}
-              onClick={() => setActiveTab("enquiry")}
-            >
-              <FaEnvelope className="mr-2" />
-              Enquiry
-            </button>
+            <div className="flex items-center sm:space-x-4 flex-wrap gap-2 justify-center sm:justify-end">
+              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/10 text-black font-semibold shadow-sm">
+                <FaUserShield className="text-xl" />
+                Administrator
+              </span>
+              <button
+                onClick={() => {
+                  try {
+                    localStorage.removeItem("isAdminAuthed");
+                  } catch {}
+                  router.push("/adminlogin");
+                }}
+                className="bg-red-600/90 hover:bg-red-700 text-white px-4 py-2 rounded-full font-semibold flex items-center shadow-md hover:shadow-lg transition-transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-red-400"
+              >
+                <FaSignOutAlt className="mr-2" />
+                Logout
+              </button>
+            </div>
           </div>
-        </div>
-      </nav>
+          {/* Shop Open Toggle */}
+          <div className="flex flex-wrap items-center justify-between sm:justify-end gap-3 mt-4 text-sm sm:text-base">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold">Shop</span>
+              <span
+                className={`inline-flex items-center gap-2 px-3 py-1 rounded-full shadow-sm ${
+                  isShopOpen
+                    ? "bg-green-100 text-green-800"
+                    : "bg-red-100 text-red-800"
+                }`}
+              >
+                <span
+                  className={`w-2.5 h-2.5 rounded-full ${
+                    isShopOpen ? "bg-green-500 animate-pulse" : "bg-red-500"
+                  }`}
+                />
+                {isShopOpen ? "Open" : "Closed"}
+              </span>
+            </div>
+            <label className="flex items-center cursor-pointer">
+              <div className="relative">
+                <input
+                  type="checkbox"
+                  checked={isShopOpen}
+                  onChange={async (e) => {
+                    if (!shopDocId) return;
+                    const newStatus = e.target.checked;
+                    setIsShopOpen(newStatus);
+                    await updateDoc(doc(db, "shop", shopDocId), {
+                      IsOpen: newStatus,
+                    });
+                    showNotification(
+                      `Shop is now ${newStatus ? "Open" : "Closed"}`
+                    );
+                  }}
+                  className="peer sr-only"
+                />
+                <div
+                  className={`block w-16 h-9 rounded-full transition-colors duration-300 ${
+                    isShopOpen
+                      ? "bg-gradient-to-r from-green-400 to-green-500"
+                      : "bg-gradient-to-r from-red-400 to-red-500"
+                  }`}
+                />
+                <div
+                  className={`absolute left-1 top-1 w-7 h-7 bg-white rounded-full shadow-md transition-all duration-300 ${
+                    isShopOpen ? "translate-x-7" : ""
+                  }`}
+                />
+              </div>
+            </label>
+          </div>
+        </header>
+        <nav className="bg-gray-900 border-b border-yellow-500">
+          <div className="container mx-auto px-4">
+            <div className="flex gap-1 overflow-x-auto md:overflow-visible whitespace-nowrap md:whitespace-normal">
+              <button
+                className={`px-6 py-3 font-semibold transition-all duration-200 flex items-center ${
+                  activeTab === "add-item"
+                    ? "bg-gradient-to-br from-yellow-400 to-yellow-300 text-black"
+                    : "text-yellow-400 hover:bg-yellow-400 hover:text-black"
+                }`}
+                onClick={() => setActiveTab("add-item")}
+              >
+                <FaPlus className="mr-2" />
+                Add Item
+              </button>
+              <button
+                className={`px-6 py-3 font-semibold transition-all duration-200 flex items-center ${
+                  activeTab === "view-items"
+                    ? "bg-gradient-to-br from-yellow-400 to-yellow-300 text-black"
+                    : "text-yellow-400 hover:bg-yellow-400 hover:text-black"
+                }`}
+                onClick={() => setActiveTab("view-items")}
+              >
+                <FaList className="mr-2" />
+                View Items
+              </button>
+              <button
+                className={`px-6 py-3 font-semibold transition-all duration-200 flex items-center ${
+                  activeTab === "orders"
+                    ? "bg-gradient-to-br from-yellow-400 to-yellow-300 text-black"
+                    : "text-yellow-400 hover:bg-yellow-400 hover:text-black"
+                }`}
+                onClick={() => setActiveTab("orders")}
+              >
+                <FaShoppingCart className="mr-2" />
+                Pending Orders
+              </button>
+              <button
+                className={`px-6 py-3 font-semibold transition-all duration-200 flex items-center ${
+                  activeTab === "history"
+                    ? "bg-gradient-to-br from-yellow-400 to-yellow-300 text-black"
+                    : "text-yellow-400 hover:bg-yellow-400 hover:text-black"
+                }`}
+                onClick={() => setActiveTab("history")}
+              >
+                <FaList className="mr-2" />
+                Order History
+              </button>
+              <button
+                className={`px-6 py-3 font-semibold transition-all duration-200 flex items-center ${
+                  activeTab === "locations"
+                    ? "bg-gradient-to-br from-yellow-400 to-yellow-300 text-black"
+                    : "text-yellow-400 hover:bg-yellow-400 hover:text-black"
+                }`}
+                onClick={() => setActiveTab("locations")}
+              >
+                <FaMapMarkerAlt className="mr-2" />
+                Locations
+              </button>
+              <button
+                className={`px-6 py-3 font-semibold transition-all duration-200 flex items-center ${
+                  activeTab === "discount"
+                    ? "bg-gradient-to-br from-yellow-400 to-yellow-300 text-black"
+                    : "text-yellow-400 hover:bg-yellow-400 hover:text-black"
+                }`}
+                onClick={() => setActiveTab("discount")}
+              >
+                <FaTag className="mr-2" />
+                Discount
+              </button>
+              <button
+                className={`px-6 py-3 font-semibold transition-all duration-200 flex items-center ${
+                  activeTab === "enquiry"
+                    ? "bg-gradient-to-br from-yellow-400 to-yellow-300 text-black"
+                    : "text-yellow-400 hover:bg-yellow-400 hover:text-black"
+                }`}
+                onClick={() => setActiveTab("enquiry")}
+              >
+                <FaEnvelope className="mr-2" />
+                Enquiry
+              </button>
+            </div>
+          </div>
+        </nav>
+      </div>
 
       <div className="container mx-auto px-4 py-8 space-y-8">
         {activeTab === "add-item" && (
@@ -1006,79 +1040,145 @@ Thank you for considering Asif's Briyani! 🙏`;
           </div>
         )}
         {activeTab === "view-items" && (
-          <div className="bg-gray-900 rounded-lg border border-yellow-500 shadow-lg overflow-x-auto">
-            <table className="w-full text-white">
-              <thead className="bg-yellow-400 text-black">
-                <tr>
-                  <th className="px-6 py-4 text-left font-bold">Image</th>
-                  <th className="px-6 py-4 text-left font-bold">Name</th>
-                  <th className="px-6 py-4 text-left font-bold">Category</th>
-                  <th className="px-6 py-4 text-left font-bold">Price</th>
-                  <th className="px-6 py-4 text-left font-bold">Description</th>
-                  <th className="px-6 py-4 text-center font-bold">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {menuItems.length === 0 ? (
+          <>
+            <div className="hidden md:block bg-gray-900 rounded-lg border border-yellow-500 shadow-lg overflow-x-auto">
+              <table className="w-full text-white">
+                <thead className="bg-yellow-400 text-black">
                   <tr>
-                    <td colSpan="6" className="text-center py-8 text-gray-400">
-                      <FaUtensils className="text-4xl mb-2 mx-auto" />
-                      <p>No menu items found. Add some items to get started!</p>
-                    </td>
+                    <th className="px-6 py-4 text-left font-bold">Image</th>
+                    <th className="px-6 py-4 text-left font-bold">Name</th>
+                    <th className="px-6 py-4 text-left font-bold">Category</th>
+                    <th className="px-6 py-4 text-left font-bold">Price</th>
+                    <th className="px-6 py-4 text-left font-bold">
+                      Description
+                    </th>
+                    <th className="px-6 py-4 text-center font-bold">Actions</th>
                   </tr>
-                ) : (
-                  menuItems.map((item) => (
-                    <tr
-                      key={item.id}
-                      className="border-b border-gray-700 hover:bg-gray-800"
-                    >
-                      <td className="px-6 py-4">
-                        {item.photoUrl ? (
-                          <img
-                            src={item.photoUrl}
-                            alt={item.itemName}
-                            className="w-16 h-16 object-cover rounded-lg"
-                          />
-                        ) : (
-                          <div className="w-16 h-16 bg-gray-700 rounded-lg flex items-center justify-center">
-                            <FaUtensils className="text-gray-500" />
-                          </div>
-                        )}
+                </thead>
+                <tbody>
+                  {menuItems.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan="6"
+                        className="text-center py-8 text-gray-400"
+                      >
+                        <FaUtensils className="text-4xl mb-2 mx-auto" />
+                        <p>
+                          No menu items found. Add some items to get started!
+                        </p>
                       </td>
-                      <td className="px-6 py-4 font-semibold">
-                        {item.itemName}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="px-3 py-1 rounded-full text-sm font-semibold bg-yellow-400 text-black">
+                    </tr>
+                  ) : (
+                    menuItems.map((item) => (
+                      <tr
+                        key={item.id}
+                        className="border-b border-gray-700 hover:bg-gray-800"
+                      >
+                        <td className="px-6 py-4">
+                          {item.photoUrl ? (
+                            <img
+                              src={item.photoUrl}
+                              alt={item.itemName}
+                              className="w-16 h-16 object-cover rounded-lg"
+                            />
+                          ) : (
+                            <div className="w-16 h-16 bg-gray-700 rounded-lg flex items-center justify-center">
+                              <FaUtensils className="text-gray-500" />
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 font-semibold">
+                          {item.itemName}
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="px-3 py-1 rounded-full text-sm font-semibold bg-yellow-400 text-black">
+                            {item.category}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 font-bold text-yellow-400">
+                          ₹{Number(item.price || 0).toFixed(2)}
+                        </td>
+                        <td className="px-6 py-4 text-gray-300 max-w-xs truncate">
+                          {item.description || "No description"}
+                        </td>
+                        <td className="px-6 py-4 text-center space-x-2">
+                          <button
+                            onClick={() => openEditModal(item)}
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg transition-colors"
+                          >
+                            <FaEdit />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteItem(item.id)}
+                            className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg transition-colors"
+                          >
+                            <FaTrash />
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+            <div className="md:hidden space-y-3">
+              {menuItems.length === 0 ? (
+                <div className="bg-gray-900 rounded-lg border border-yellow-500 shadow-lg p-6 text-center text-gray-400">
+                  <FaUtensils className="text-4xl mb-2 mx-auto" />
+                  <p>No menu items found. Add some items to get started!</p>
+                </div>
+              ) : (
+                menuItems.map((item) => (
+                  <div
+                    key={item.id}
+                    className="bg-gray-900 rounded-lg border border-gray-700 p-4 shadow"
+                  >
+                    {item.photoUrl ? (
+                      <img
+                        src={item.photoUrl}
+                        alt={item.itemName}
+                        className="w-full h-40 object-cover rounded-md"
+                      />
+                    ) : (
+                      <div className="w-full h-40 bg-gray-800 rounded-md flex items-center justify-center">
+                        <FaUtensils className="text-gray-500 text-2xl" />
+                      </div>
+                    )}
+                    <div className="mt-3">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-semibold">
+                          {item.itemName}
+                        </h3>
+                        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-yellow-400 text-black">
                           {item.category}
                         </span>
-                      </td>
-                      <td className="px-6 py-4 font-bold text-yellow-400">
+                      </div>
+                      <div className="mt-1 text-yellow-400 font-bold">
                         ₹{Number(item.price || 0).toFixed(2)}
-                      </td>
-                      <td className="px-6 py-4 text-gray-300 max-w-xs truncate">
+                      </div>
+                      <p className="mt-1 text-gray-300">
                         {item.description || "No description"}
-                      </td>
-                      <td className="px-6 py-4 text-center space-x-2">
+                      </p>
+                      <div className="mt-3 flex gap-2">
                         <button
                           onClick={() => openEditModal(item)}
-                          className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg transition-colors"
+                          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg transition-colors flex items-center justify-center"
                         >
-                          <FaEdit />
+                          <FaEdit className="mr-2" /> Edit
                         </button>
                         <button
                           onClick={() => handleDeleteItem(item.id)}
-                          className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg transition-colors"
+                          className="flex-1 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg transition-colors flex items-center justify-center"
                         >
-                          <FaTrash />
+                          <FaTrash className="mr-2" /> Delete
                         </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </>
         )}
         {activeTab === "orders" && (
           <div className="space-y-4">
@@ -1113,7 +1213,7 @@ Thank you for considering Asif's Briyani! 🙏`;
                     key={order.id}
                     className="bg-gray-800 p-6 rounded-lg border border-gray-700 hover:border-yellow-500 transition-colors"
                   >
-                    <div className="flex justify-between mb-4">
+                    <div className="flex flex-col md:flex-row justify-between md:items-center gap-3 mb-4">
                       <div>
                         <h3 className="text-xl font-bold text-yellow-400">
                           {order.orderID || `Order #${order.id}`}
@@ -1122,16 +1222,16 @@ Thank you for considering Asif's Briyani! 🙏`;
                           {formatDate(order.createdAt)}
                         </p>
                       </div>
-                      <div className="flex space-x-2">
+                      <div className="flex flex-col sm:flex-row gap-2 md:gap-0 md:space-x-2">
                         <button
                           onClick={() => acceptOrder(order.id)}
-                          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-semibold"
+                          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-full md:rounded-lg font-semibold flex items-center justify-center md:justify-start w-full sm:w-auto h-12 md:h-auto shadow-md md:shadow-none focus:outline-none focus:ring-2 focus:ring-green-400/70"
                         >
                           <FaCheck className="mr-2" /> Accept
                         </button>
                         <button
                           onClick={() => rejectOrder(order.id)}
-                          className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-semibold flex items-center"
+                          className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-full md:rounded-lg font-semibold flex items-center justify-center md:justify-start w-full sm:w-auto h-12 md:h-auto shadow-md md:shadow-none focus:outline-none focus:ring-2 focus:ring-red-400/70"
                         >
                           <FaTimes className="mr-2" /> Reject
                         </button>
@@ -1152,6 +1252,22 @@ Thank you for considering Asif's Briyani! 🙏`;
                         <p className="text-gray-300 mt-2">
                           <strong>Address:</strong> {order.address}
                         </p>
+                        {/* User Location Button */}
+                        {order.location?.lat && order.location?.lng && (
+                          <button
+                            className="mt-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded flex items-center"
+                            onClick={() =>
+                              window.open(
+                                `https://www.google.com/maps?q=${order.location.lat},${order.location.lng}`,
+                                "_blank"
+                              )
+                            }
+                            title="Open user location in Google Maps"
+                          >
+                            <FaMapMarkerAlt className="mr-2" />
+                            User Location
+                          </button>
+                        )}
                       </div>
                       <div>
                         <h4 className="font-semibold text-yellow-400 mb-2">
@@ -1288,7 +1404,7 @@ Thank you for considering Asif's Briyani! 🙏`;
                       key={order.id}
                       className="bg-gray-800 p-6 rounded-lg border border-gray-700 hover:border-yellow-500 transition-colors"
                     >
-                      <div className="flex justify-between mb-4">
+                      <div className="flex flex-col md:flex-row justify-between md:items-center gap-3 mb-4">
                         <div>
                           <h3 className="text-xl font-bold text-yellow-400">
                             {order.orderID || `Order #${order.id}`}
@@ -1318,6 +1434,22 @@ Thank you for considering Asif's Briyani! 🙏`;
                           <p className="text-gray-300 mt-2">
                             <strong>Address:</strong> {order.address}
                           </p>
+                          {/* User Location Button */}
+                          {order.location?.lat && order.location?.lng && (
+                            <button
+                              className="mt-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded flex items-center"
+                              onClick={() =>
+                                window.open(
+                                  `https://www.google.com/maps?q=${order.location.lat},${order.location.lng}`,
+                                  "_blank"
+                                )
+                              }
+                              title="Open user location in Google Maps"
+                            >
+                              <FaMapMarkerAlt className="mr-2" />
+                              User Location
+                            </button>
+                          )}
                         </div>
                         <div>
                           <h4 className="font-semibold text-yellow-400 mb-2">
@@ -1685,7 +1817,7 @@ Thank you for considering Asif's Briyani! 🙏`;
                           </div>
 
                           <div className="mt-4 pt-4 border-t border-gray-600">
-                            <div className="flex space-x-2">
+                            <div className="flex flex-col sm:flex-row gap-2">
                               <button
                                 onClick={() => {
                                   if (inquiry.contactNumber) {
@@ -1695,7 +1827,7 @@ Thank you for considering Asif's Briyani! 🙏`;
                                     window.open(whatsappUrl, "_blank");
                                   }
                                 }}
-                                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-semibold flex items-center"
+                                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-semibold flex items-center w-full sm:w-auto"
                                 disabled={!inquiry.contactNumber}
                               >
                                 <MdPhone className="mr-2" /> {/* <-- FIXED */}
@@ -1707,7 +1839,7 @@ Thank you for considering Asif's Briyani! 🙏`;
                                     window.location.href = `mailto:${inquiry.email}`;
                                   }
                                 }}
-                                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold flex items-center"
+                                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold flex items-center w-full sm:w-auto"
                                 disabled={!inquiry.email}
                               >
                                 <FaEnvelope className="mr-2" />
@@ -1853,6 +1985,65 @@ Thank you for considering Asif's Briyani! 🙏`;
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+    {confirmState.open && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            onClick={closeConfirm}
+          />
+          <div className="relative bg-gray-900 border border-gray-700 rounded-xl w-11/12 max-w-md mx-auto p-6 shadow-2xl">
+            <div className="flex items-center gap-3">
+              <div
+                className={`flex items-center justify-center w-12 h-12 rounded-full ${
+                  confirmState.theme === "danger"
+                    ? "bg-red-600/20 text-red-400 ring-2 ring-red-500/30"
+                    : "bg-yellow-500/20 text-yellow-300 ring-2 ring-yellow-400/30"
+                }`}
+              >
+                {confirmState.icon === "trash" ? (
+                  <FaTrash className="text-xl" />
+                ) : (
+                  <FaTimes className="text-xl" />
+                )}
+              </div>
+              <h3 className="text-xl font-bold text-white">{confirmState.title}</h3>
+            </div>
+            <p className="mt-3 text-gray-300">{confirmState.message}</p>
+            <div className="mt-6 flex gap-3">
+              <button
+                type="button"
+                onClick={closeConfirm}
+                className="flex-1 bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-semibold"
+                disabled={confirmLoading}
+              >
+                {confirmState.cancelText || "Cancel"}
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  if (confirmLoading) return;
+                  setConfirmLoading(true);
+                  try {
+                    if (typeof confirmState.onConfirm === "function") {
+                      await confirmState.onConfirm();
+                    }
+                  } finally {
+                    closeConfirm();
+                  }
+                }}
+                className={`flex-1 px-4 py-2 rounded-lg font-semibold shadow-md ${
+                  confirmState.theme === "danger"
+                    ? "bg-red-600 hover:bg-red-700 text-white focus:outline-none focus:ring-2 focus:ring-red-400/70"
+                    : "bg-yellow-400 hover:bg-yellow-500 text-black focus:outline-none focus:ring-2 focus:ring-yellow-300/70"
+                }`}
+                disabled={confirmLoading}
+              >
+                {confirmLoading ? "Please wait…" : confirmState.confirmText || "OK"}
+              </button>
+            </div>
           </div>
         </div>
       )}

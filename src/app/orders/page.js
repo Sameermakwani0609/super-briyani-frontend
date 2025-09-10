@@ -57,14 +57,16 @@ export default function OrdersPage() {
   }, [user]);
 
   return (
-    <div className="min-h-screen bg-black text-white py-20">
-      <div className="container mx-auto px-4">
-        <h1 className="text-4xl font-bold text-yellow-400 mb-8 text-center">Today&apos;s Orders</h1>
+    <div className="min-h-screen bg-black text-white py-10 sm:py-20">
+      <div className="container mx-auto px-2 sm:px-4">
+        <h1 className="text-3xl sm:text-4xl font-bold text-yellow-400 mb-6 sm:mb-8 text-center">
+          Today&apos;s Orders
+        </h1>
         {orders.length === 0 ? (
           <div className="text-center">
-            <div className="text-8xl text-yellow-400 mb-6">📋</div>
-            <h2 className="text-2xl font-bold text-white mb-4">No orders today</h2>
-            <p className="text-gray-400 mb-8">Your orders for today will appear here.</p>
+            <div className="text-7xl sm:text-8xl text-yellow-400 mb-6">📋</div>
+            <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">No orders today</h2>
+            <p className="text-gray-400 mb-8 text-sm sm:text-base">Your orders for today will appear here.</p>
           </div>
         ) : (
           <div className="max-w-3xl mx-auto space-y-6">
@@ -76,15 +78,15 @@ export default function OrdersPage() {
               const pct = Number(discountPercent) || 0;
               const discounted = Math.max(0, baseTotal * (1 - pct/100));
               return (
-                <div key={order.id} className="bg-gray-900 rounded-lg p-6 border border-yellow-500">
-                  <div className="flex items-center justify-between mb-4">
+                <div key={order.id} className="bg-gray-900 rounded-lg p-4 sm:p-6 border border-yellow-500">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-2">
                     <div>
-                      <div className="text-gray-400 text-sm">Order ID</div>
-                      <div className="text-xl font-semibold text-white">{order.orderID || `#${order.id}`}</div>
+                      <div className="text-gray-400 text-xs sm:text-sm">Order ID</div>
+                      <div className="text-lg sm:text-xl font-semibold text-white">{order.orderID || `#${order.id}`}</div>
                     </div>
-                    <span className={`px-3 py-1 rounded-full text-sm font-semibold ${statusClass}`}>{status.charAt(0).toUpperCase() + status.slice(1)}</span>
+                    <span className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-semibold ${statusClass}`}>{status.charAt(0).toUpperCase() + status.slice(1)}</span>
                   </div>
-                  <div className="grid md:grid-cols-3 gap-4 text-sm text-gray-300 mb-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2 sm:gap-4 text-xs sm:text-sm text-gray-300 mb-6">
                     <div><span className="text-yellow-400">Name:</span> {order.name}</div>
                     <div><span className="text-yellow-400">Date:</span> {createdStr}</div>
                     <div className="text-right md:text-left">
@@ -97,7 +99,7 @@ export default function OrdersPage() {
                     </div>
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-yellow-400 mb-2">Items</h3>
+                    <h3 className="text-base sm:text-lg font-semibold text-yellow-400 mb-2">Items</h3>
                     <div className="space-y-2">
                       {(order.items || []).map((i, idx) => {
                         const unit = Number(i.price || 0);
@@ -106,19 +108,19 @@ export default function OrdersPage() {
                         const lineDisc = Math.max(0, lineBase * (1 - (Number(discountPercent)||0)/100));
                         const hasDisc = (Number(discountPercent)||0) > 0 && lineDisc !== lineBase;
                         return (
-                          <div key={idx} className="flex justify_between items-center bg-gray-800 p-3 rounded flex justify-between">
+                          <div key={idx} className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-gray-800 p-2 sm:p-3 rounded">
                             <div className="text-white">
-                              <div className="font-semibold">{i.itemName}</div>
-                              <div className="text-sm text-gray-300">₹{unit.toFixed(2)} × {qty}</div>
+                              <div className="font-semibold text-sm sm:text-base">{i.itemName}</div>
+                              <div className="text-xs text-gray-300">₹{unit.toFixed(2)} × {qty}</div>
                             </div>
-                            <div className="text-right">
+                            <div className="text-right mt-2 sm:mt-0">
                               {hasDisc ? (
                                 <div>
-                                  <div className="text-gray-400 line-through">₹{lineBase.toFixed(2)}</div>
-                                  <div className="text-yellow-400 font-semibold">₹{lineDisc.toFixed(2)}</div>
+                                  <div className="text-gray-400 line-through text-xs">₹{lineBase.toFixed(2)}</div>
+                                  <div className="text-yellow-400 font-semibold text-sm">₹{lineDisc.toFixed(2)}</div>
                                 </div>
                               ) : (
-                                <div className="text-yellow-400 font-semibold">₹{lineBase.toFixed(2)}</div>
+                                <div className="text-yellow-400 font-semibold text-sm">₹{lineBase.toFixed(2)}</div>
                               )}
                             </div>
                           </div>
@@ -133,12 +135,12 @@ export default function OrdersPage() {
         )}
 
         <div className="max-w-3xl mx-auto mt-10">
-          <div className="flex items-center gap-3 mb-4">
+          <div className="flex flex-col sm:flex-row items-center gap-3 mb-4">
             <input
               type="date"
               value={historyDate}
               onChange={(e) => setHistoryDate(e.target.value)}
-              className="bg-gray-800 border border-gray-700 text-white px-3 py-2 rounded"
+              className="bg-gray-800 border border-gray-700 text-white px-3 py-2 rounded w-full sm:w-auto"
             />
             <button
               onClick={() => {
@@ -150,7 +152,7 @@ export default function OrdersPage() {
                 };
                 setHistoryResults(allOrders.filter(o => matches(o.createdAt)));
               }}
-              className="bg-yellow-400 hover:bg-yellow-500 text-black px-4 py-2 rounded font-semibold"
+              className="bg-yellow-400 hover:bg-yellow-500 text-black px-4 py-2 rounded font-semibold w-full sm:w-auto"
             >
               Search history
             </button>
@@ -165,15 +167,15 @@ export default function OrdersPage() {
                 const pct = Number(discountPercent) || 0;
                 const discounted = Math.max(0, baseTotal * (1 - pct/100));
                 return (
-                  <div key={o.id} className="bg-gray-900 rounded-lg p-4 border border-gray-700">
-                    <div className="flex items-center justify-between">
+                  <div key={o.id} className="bg-gray-900 rounded-lg p-3 sm:p-4 border border-gray-700">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                       <div>
-                        <div className="text-sm text-gray-400">{o.orderID || `#${o.id}`}</div>
-                        <div className="text-white">{createdStr}</div>
+                        <div className="text-xs sm:text-sm text-gray-400">{o.orderID || `#${o.id}`}</div>
+                        <div className="text-white text-xs sm:text-base">{createdStr}</div>
                       </div>
                       <span className={`px-2 py-1 rounded-full text-xs font-semibold ${statusClass}`}>{status.charAt(0).toUpperCase() + status.slice(1)}</span>
                     </div>
-                    <div className="mt-3 grid md:grid-cols-3 gap-3 text-sm text-gray-300">
+                    <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-2 sm:gap-3 text-xs sm:text-sm text-gray-300">
                       <div><span className="text-yellow-400">Name:</span> {o.name}</div>
                       <div className="text-right md:text-left">
                         <span className="text-yellow-400">Total:</span>
@@ -193,12 +195,12 @@ export default function OrdersPage() {
                         const lineDisc = Math.max(0, lineBase * (1 - pct/100));
                         const hasDisc = pct > 0 && lineDisc !== lineBase;
                         return (
-                          <div key={idx} className="flex justify-between items-center bg-gray-800 p-2 rounded text-sm text-gray-300">
+                          <div key={idx} className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-gray-800 p-2 rounded text-xs sm:text-sm text-gray-300">
                             <div>
                               <div className="text-white font-medium">{i.itemName}</div>
                               <div className="text-xs text-gray-400">₹{unit.toFixed(2)} × {qty}</div>
                             </div>
-                            <div className="text-right">
+                            <div className="text-right mt-2 sm:mt-0">
                               {hasDisc ? (
                                 <div>
                                   <div className="line-through text-gray-400">₹{lineBase.toFixed(2)}</div>

@@ -122,8 +122,22 @@ export function CartProvider({ children }) {
     const total = getCartTotal();
     const orderID = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
+    // Helper: wrap geolocation in a Promise
+    const getLocation = () => {
+      return new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => resolve(pos.coords),
+          (err) => reject(err),
+          { enableHighAccuracy: true, timeout: 10000 }
+        );
+      });
+    };
+
     try {
-      toast.loading("Placing your order…");
+      toast.loading("Getting your location…");
+
+      // ✅ Wait for location
+      const coords = await getLocation();
 
       const orderPayload = {
         orderID,
@@ -136,17 +150,22 @@ export function CartProvider({ children }) {
         items: cart,
         total,
         createdAt: timestamp(),
+        location: {
+          lat: coords.latitude,
+          lng: coords.longitude,
+        },
       };
 
+      // Save order in Firestore
       await addDoc(collection(db, "orders"), orderPayload);
 
       toast.dismiss();
       toast.success("✅ Order placed successfully!");
       clearCart();
     } catch (error) {
-      console.error("[Firestore] Failed to place order", error);
+      console.error("[Order] Failed:", error);
       toast.dismiss();
-      toast.error("❌ Failed to place order. Please try again.");
+      toast.error("❌ Failed to get location or place order");
     }
   };
 

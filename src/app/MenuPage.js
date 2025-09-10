@@ -124,23 +124,23 @@ export default function MenuPage() {
 
   // If shop is open, show menu
   return (
-    <section className="pt-24 pb-16 bg-black text-white">
-      <div className="container mx-auto px-4">
+    <section className="pt-20 pb-10 bg-black text-white min-h-screen">
+      <div className="container mx-auto px-2 sm:px-4">
         {/* Heading */}
-        <h2 className="text-5xl font-bold text-center text-yellow-400 mb-12 drop-shadow-lg">
+        <h2 className="text-3xl sm:text-5xl font-bold text-center text-yellow-400 mb-8 sm:mb-12 drop-shadow-lg">
           Our Menu
         </h2>
 
         {/* Menu Categories */}
-        <div className="flex justify-center mb-8">
-          <div className="flex space-x-4 bg-yellow-400/20 p-2 rounded-lg">
+        <div className="flex justify-center mb-6 sm:mb-8">
+          <div className="flex space-x-2 sm:space-x-4 bg-yellow-400/20 p-2 rounded-lg overflow-x-auto scrollbar-hide">
             {categories.map((key) => {
-              const Icon = categoryIcons[key] || GiKnifeFork; // fallback icon
+              const Icon = categoryIcons[key] || GiKnifeFork;
               return (
                 <button
                   key={key}
                   onClick={() => setFilter(key)}
-                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-semibold transition-colors ${
+                  className={`flex items-center space-x-2 px-3 py-2 sm:px-4 sm:py-2 rounded-lg font-semibold transition-colors whitespace-nowrap ${
                     filter === key
                       ? "bg-yellow-400 text-black"
                       : "text-yellow-400 hover:bg-yellow-400 hover:text-black"
@@ -155,7 +155,7 @@ export default function MenuPage() {
         </div>
 
         {/* Menu Items Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {filteredItems.map((item) => {
             const quantity = getCartQuantity(item.id);
             const pct = Number(discountPercent) || 0;

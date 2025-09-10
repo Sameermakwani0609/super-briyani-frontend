@@ -6,7 +6,7 @@ export default function Hero() {
     <section
       id="home"
       className="relative h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 bg-[length:400%_400%] animate-videoSimulation bg-cover bg-center"
-      style={{ backgroundImage: "url('/briyani.jpg')" }}
+      style={{ backgroundImage: "url('/biryanii.jpg')" }}
     >
       {/* Dark overlay */}
       <div className="absolute inset-0 bg-black/50"></div>

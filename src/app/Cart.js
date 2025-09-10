@@ -195,34 +195,34 @@ export default function Cart() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white py-20">
-      <div className="container mx-auto px-4">
-        <h1 className="text-4xl font-bold text-yellow-400 mb-8 text-center">
+    <div className="min-h-screen bg-black text-white py-10 sm:py-20">
+      <div className="container mx-auto px-2 sm:px-4">
+        <h1 className="text-3xl sm:text-4xl font-bold text-yellow-400 mb-6 sm:mb-8 text-center">
           Your Cart
         </h1>
 
-        <div className="grid lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
           {/* Cart Items */}
-          <div className="bg-gray-900 rounded-lg p-6 border border-yellow-500">
-            <h2 className="text-2xl font-bold text-yellow-400 mb-6 flex items-center">
-              <FaShoppingCart className="mr-3" />
+          <div className="bg-gray-900 rounded-lg p-4 sm:p-6 border border-yellow-500">
+            <h2 className="text-xl sm:text-2xl font-bold text-yellow-400 mb-4 sm:mb-6 flex items-center">
+              <FaShoppingCart className="mr-2 sm:mr-3" />
               Cart Items ({cart.length})
             </h2>
 
-            <div className="space-y-4">
+            <div className="space-y-4 max-h-[50vh] overflow-y-auto">
               {cart.map((item) => (
                 <div
                   key={item.id}
-                  className="flex items-center justify-between p-4 bg-gray-800 rounded-lg border border-gray-700"
+                  className="flex flex-col sm:flex-row items-center justify-between p-3 sm:p-4 bg-gray-800 rounded-lg border border-gray-700"
                 >
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-yellow-400">
+                  <div className="flex-1 w-full sm:w-auto mb-2 sm:mb-0">
+                    <h3 className="text-base sm:text-lg font-semibold text-yellow-400">
                       {item.itemName}
                     </h3>
-                    <p className="text-gray-400">₹{item.price} per item</p>
+                    <p className="text-gray-400 text-xs sm:text-sm">₹{item.price} per item</p>
                   </div>
 
-                  <div className="flex items-center space-x-3">
+                  <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-3 w-full sm:w-auto">
                     <div className="flex items-center space-x-2">
                       <button
                         onClick={() =>
@@ -253,7 +253,7 @@ export default function Cart() {
 
                     <button
                       onClick={() => removeFromCart(item.id)}
-                      className="bg-red-600 hover:bg-red-700 text-white p-2 rounded-lg transition-colors ml-3"
+                      className="bg-red-600 hover:bg-red-700 text-white p-2 rounded-lg transition-colors ml-0 sm:ml-3"
                     >
                       <FaTrash />
                     </button>
@@ -262,8 +262,8 @@ export default function Cart() {
               ))}
             </div>
 
-            <div className="mt-6 pt-4 border-t border-gray-700">
-              <div className="flex justify-between items-center text-xl font-bold">
+            <div className="mt-4 sm:mt-6 pt-4 border-t border-gray-700">
+              <div className="flex justify-between items-center text-lg sm:text-xl font-bold">
                 <span>Total:</span>
                 <span className="text-yellow-400">₹{(() => {
                   const raw = getCartTotal();
@@ -273,7 +273,7 @@ export default function Cart() {
                 })()}</span>
               </div>
               {Number(discountPercent) > 0 && (
-                <div className="text-right text-sm text-gray-400 mt-1">
+                <div className="text-right text-xs sm:text-sm text-gray-400 mt-1">
                   <span className="line-through mr-2">₹{getCartTotal().toFixed ? getCartTotal().toFixed(2) : getCartTotal()}</span>
                   <span className="text-green-400">({Number(discountPercent)}% off applied)</span>
                 </div>
@@ -282,15 +282,15 @@ export default function Cart() {
           </div>
 
           {/* Billing Details */}
-          <div className="bg-gray-900 rounded-lg p-6 border border-yellow-500">
-            <h2 className="text-2xl font-bold text-yellow-400 mb-6">
+          <div className="bg-gray-900 rounded-lg p-4 sm:p-6 border border-yellow-500">
+            <h2 className="text-xl sm:text-2xl font-bold text-yellow-400 mb-4 sm:mb-6">
               Billing Details
             </h2>
 
             {/* Auth Status */}
-            <div className="mb-6 p-4 rounded-lg border border-gray-700 bg-gray-800">
+            <div className="mb-4 sm:mb-6 p-3 sm:p-4 rounded-lg border border-gray-700 bg-gray-800">
               {user ? (
-                <div className="text-sm text-gray-300">
+                <div className="text-xs sm:text-sm text-gray-300">
                   Signed in as{" "}
                   <span className="text-yellow-400 font-semibold">
                     {user.displayName || user.email}
@@ -308,7 +308,7 @@ export default function Cart() {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-yellow-400 font-semibold mb-2 flex items-center">
+                <label className="block text-yellow-400 font-semibold mb-2 flex items-center text-sm">
                   <FaUser className="mr-2" />
                   Full Name
                 </label>
@@ -324,7 +324,7 @@ export default function Cart() {
               </div>
 
               <div>
-                <label className="block text-yellow-400 font-semibold mb-2 flex items-center">
+                <label className="block text-yellow-400 font-semibold mb-2 flex items-center text-sm">
                   <FaMobileAlt className="mr-2" />
                   Mobile Number
                 </label>
@@ -340,7 +340,7 @@ export default function Cart() {
               </div>
 
               <div>
-                <label className="block text-yellow-400 font-semibold mb-2 flex items-center">
+                <label className="block text-yellow-400 font-semibold mb-2 flex items-center text-sm">
                   <FaMapMarkerAlt className="mr-2" />
                   Delivery Address
                 </label>
@@ -356,11 +356,11 @@ export default function Cart() {
               </div>
             </div>
 
-            <div className="mt-8 space-y-4">
+            <div className="mt-6 sm:mt-8 space-y-4">
               {outOfRange && (
-                <div className="p-4 rounded-lg border border-red-600 bg-red-900/40 text-red-200">
+                <div className="p-3 sm:p-4 rounded-lg border border-red-600 bg-red-900/40 text-red-200">
                   <div className="font-semibold mb-2">Out of delivery range</div>
-                  <div className="text-sm mb-3">
+                  <div className="text-xs sm:text-sm mb-3">
                     We currently deliver within 10 km only.
                     {typeof lastDistanceKm === "number" && (
                       <span> Your distance is ~{lastDistanceKm.toFixed(1)} km.</span>
@@ -369,7 +369,7 @@ export default function Cart() {
                   <button
                     onClick={tryUseCurrentLocation}
                     disabled={isFetchingLocation}
-                    className="bg-yellow-400 disabled:opacity-60 text-black px-4 py-2 rounded font-semibold hover:bg-yellow-500"
+                    className="bg-yellow-400 disabled:opacity-60 text-black px-4 py-2 rounded font-semibold hover:bg-yellow-500 w-full"
                   >
                     {isFetchingLocation ? "Checking..." : "Use current location"}
                   </button>
@@ -377,7 +377,7 @@ export default function Cart() {
               )}
               <button
                 onClick={handlePlaceOrder}
-                className="w-full bg-gradient-to-r from-yellow-400 to-yellow-600 text-black py-4 rounded-lg font-bold text-lg hover:shadow-lg hover:shadow-yellow-400/25 transition-all duration-200"
+                className="w-full bg-gradient-to-r from-yellow-400 to-yellow-600 text-black py-4 rounded-lg font-bold text-base sm:text-lg hover:shadow-lg hover:shadow-yellow-400/25 transition-all duration-200"
               >
                 {(() => {
                   const raw = Number(getCartTotal() || 0);

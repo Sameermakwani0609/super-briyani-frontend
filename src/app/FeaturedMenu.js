@@ -69,9 +69,10 @@ export default function FeaturedMenu() {
     const discounted = Math.max(0, price * (1 - pct / 100));
     const showDiscount = pct > 0 && discounted !== price;
     return (
-      <div className="relative bg-black/70 backdrop-blur-md border border-gray-300 rounded-2xl p-6 transform transition-all duration-300 hover:-translate-y-2 hover:shadow-lg hover:shadow-yellow-300/50 group">
+      <div className="relative bg-black/70 backdrop-blur-md border border-gray-300 rounded-2xl p-6 flex flex-col justify-between items-center w-full h-80 max-w-xs mx-auto
+        transition-all duration-300 hover:-translate-y-2 hover:shadow-lg hover:shadow-yellow-300/50 group">
         {/* Image */}
-        <div className="h-48 rounded-xl mb-6 flex items-center justify-center overflow-hidden">
+        <div className="h-32 w-full rounded-xl mb-4 flex items-center justify-center overflow-hidden">
           {item.photoUrl ? (
             <img
               src={item.photoUrl}
@@ -82,28 +83,24 @@ export default function FeaturedMenu() {
             <span className="text-gray-400">No Image</span>
           )}
         </div>
-
         {/* Title */}
-        <h4 className="text-2xl font-playfair font-bold mb-2 text-yellow-400">
+        <h4 className="text-lg font-playfair font-bold mb-1 text-yellow-400 text-center">
           {item.itemName}
         </h4>
-
         {/* Description */}
-        <p className="text-gray-300 mb-4">{item.description}</p>
-
+        <p className="text-gray-300 mb-2 text-sm text-center">{item.description}</p>
         {/* Price */}
-        <div className="flex items-center">
+        <div className="flex items-center justify-center mb-2">
           {showDiscount ? (
             <div className="flex items-center gap-2">
               <span className="line-through text-gray-400">₹{price.toFixed(2)}</span>
-              <span className="text-2xl font-bold text-yellow-400">₹{discounted.toFixed(2)}</span>
+              <span className="text-lg font-bold text-yellow-400">₹{discounted.toFixed(2)}</span>
               <span className="text-xs text-green-400">({pct}% off)</span>
             </div>
           ) : (
-            <span className="text-2xl font-bold text-yellow-400">₹{price.toFixed(2)}</span>
+            <span className="text-lg font-bold text-yellow-400">₹{price.toFixed(2)}</span>
           )}
         </div>
-
         {/* Add to Cart or Quantity Controls */}
         {quantity === 0 ? (
           <button
@@ -131,34 +128,35 @@ export default function FeaturedMenu() {
             </button>
           </div>
         )}
-
         {/* Glow effect */}
-       <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-15 bg-yellow-400 blur-xl transition-all pointer-events-none"></div>
-
+        <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-15 bg-yellow-400 blur-xl transition-all pointer-events-none"></div>
       </div>
     );
   };
 
   return (
     <section id="menu" className="py-20 bg-black">
-      <div className="container mx-auto px-6">
+      <div className="container mx-auto px-2 sm:px-6">
         {/* Section Title */}
-        <div className="text-center mb-16 opacity-0 animate-fadeIn">
-          <h3 className="text-5xl font-playfair font-bold text-yellow-400 mb-4">
+        <div className="text-center mb-10 opacity-0 animate-fadeIn">
+          <h3 className="text-3xl sm:text-5xl font-playfair font-bold text-yellow-400 mb-2 sm:mb-4">
             Signature Menu
           </h3>
-          <p className="text-xl text-gray-300">
+          <p className="text-base sm:text-xl text-gray-300">
             Discover our most celebrated dishes
           </p>
         </div>
-
         {/* Show Carousel if >3 else Grid */}
         {menuItems.length > 3 ? (
           <Swiper
-            modules={[Navigation, Pagination]}
-            spaceBetween={20}
-            slidesPerView={3}
-            navigation
+            modules={[Pagination]}
+            spaceBetween={16}
+            slidesPerView={1}
+            breakpoints={{
+              640: { slidesPerView: 1 },
+              768: { slidesPerView: 2 },
+              1024: { slidesPerView: 3 }
+            }}
             pagination={{ clickable: true }}
             loop={true}
             autoplay={{ delay: 3000 }}
@@ -171,13 +169,24 @@ export default function FeaturedMenu() {
             ))}
           </Swiper>
         ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {menuItems.map((item) => (
               <Card key={item.id} item={item} />
             ))}
           </div>
         )}
       </div>
+      {/* Swiper theme overrides */}
+      <style jsx global>{`
+        /* Remove navigation arrow styles */
+        .swiper-pagination-bullet {
+          background: #facc15 !important; /* Tailwind yellow-400 */
+          opacity: 1;
+        }
+        .swiper-pagination-bullet-active {
+          background: #f59e0b !important; /* Tailwind yellow-500 */
+        }
+      `}</style>
     </section>
   );
 }
