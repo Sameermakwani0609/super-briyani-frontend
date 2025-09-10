@@ -339,7 +339,6 @@ export default function AdminDashboard() {
         }
       });
     } catch (e) {
-      // Fallback to IP-based approximate location
       try {
         const res = await fetch("https://ipapi.co/json/");
         if (res.ok) {
@@ -367,7 +366,6 @@ export default function AdminDashboard() {
       setLocFetching(false);
     }
   };
-
   const saveAdminCity = async () => {
     try {
       if (!shopDocId) return;
@@ -427,8 +425,6 @@ export default function AdminDashboard() {
       setCitySearching(false);
     }
   };
-
-  // Unlock audio on first interaction
   useEffect(() => {
     const markEnabled = () => {
       try {
@@ -500,7 +496,6 @@ export default function AdminDashboard() {
       .filter((o) => isSameDayAs(o.createdAt, today));
 
     const currentIds = new Set(pendingToday.map((o) => o.id));
-    // Detect newly added ids compared to previous snapshot
     let hasNew = false;
     currentIds.forEach((id) => {
       if (!seenPendingIdsRef.current.has(id)) hasNew = true;
@@ -1264,12 +1259,30 @@ Thank you for considering Asif's Briyani! 🙏`;
                 .filter((o) => isSameDayAs(o.createdAt, historyDate))
                 .map((order) => {
                   const status = order.status || "pending";
-                  const badge =
-                    status === "accepted"
-                      ? "bg-green-600 text-white"
-                      : status === "rejected"
-                      ? "bg-red-600 text-white"
-                      : "bg-yellow-400 text-black";
+                  let badgeClass =
+                    "inline-flex items-center gap-2 px-4 py-1 rounded-full font-semibold shadow text-base border transition";
+                  let badgeIcon = null;
+                  let badgeText = "";
+                  switch (status) {
+                    case "accepted":
+                      badgeClass +=
+                        " bg-gradient-to-r from-green-400 to-green-600 text-white border-green-500";
+                      badgeIcon = <FaCheck className="text-lg" />;
+                      badgeText = "Accepted";
+                      break;
+                    case "rejected":
+                      badgeClass +=
+                        " bg-gradient-to-r from-red-400 to-red-600 text-white border-red-500";
+                      badgeIcon = <FaTimes className="text-lg" />;
+                      badgeText = "Rejected";
+                      break;
+                    default:
+                      badgeClass +=
+                        " bg-gradient-to-r from-yellow-300 to-yellow-500 text-black border-yellow-400";
+                      badgeIcon = <FaList className="text-lg" />;
+                      badgeText =
+                        status.charAt(0).toUpperCase() + status.slice(1);
+                  }
                   return (
                     <div
                       key={order.id}
@@ -1284,10 +1297,9 @@ Thank you for considering Asif's Briyani! 🙏`;
                             {formatDate(order.createdAt)}
                           </p>
                         </div>
-                        <span
-                          className={`px-3 py-1 rounded-full text-sm font-semibold ${badge}`}
-                        >
-                          {status.charAt(0).toUpperCase() + status.slice(1)}
+                        <span className={badgeClass} title={badgeText}>
+                          {badgeIcon}
+                          {badgeText}
                         </span>
                       </div>
                       <div className="grid md:grid-cols-2 gap-6">
