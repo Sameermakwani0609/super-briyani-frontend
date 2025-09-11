@@ -103,23 +103,119 @@ export function CartProvider({ children }) {
       setUser(currentUser);
 
       toast.dismiss(); // remove "loading..."
-      toast.success(`Welcome, ${currentUser.displayName}! 🎉`, {
+      toast.success(`🎉 Welcome, ${currentUser.displayName}!`, {
         icon: "👏",
+        style: {
+          border: "1px solid #4caf50",
+          padding: "12px",
+          color: "#fff",
+          background: "#4caf50",
+          fontWeight: "bold",
+        },
       });
     } catch (error) {
       console.error("[Auth] Google sign-in failed", error);
       toast.dismiss();
-      toast.error("Google sign-in failed. Please try again.");
+      toast.error("❌ Google sign-in failed. Please try again.", {
+        style: {
+          border: "1px solid #f44336",
+          padding: "12px",
+          color: "#fff",
+          background: "#f44336",
+          fontWeight: "bold",
+        },
+      });
     }
   };
 
   // --- Place Order ---
-  const placeOrder = async (address, billingName, billingMobile) => {
-    if (!user) return toast.error("Please sign in first");
-    if (!address) return toast.error("Please enter address");
-    if (!cart || cart.length === 0) return toast.error("Cart is empty");
+  const placeOrder = async (
+    address,
+    billingName,
+    billingMobile,
+    appliedDiscountPercent = 0
+  ) => {
+    if (!user) {
+      return toast.error("🔑 Please sign in to continue!", {
+        icon: "🚀",
+        style: {
+          border: "1px solid #FF4D4F",
+          padding: "12px",
+          color: "#fff",
+          background: "#ff4d4f",
+          fontWeight: "bold",
+        },
+      });
+    }
 
-    const total = getCartTotal();
+    // ✅ Check all details
+    if (!billingName || !billingMobile || !address) {
+      return toast.error("⚠️ Please fill in all required details!", {
+        icon: "📝",
+        style: {
+          border: "1px solid #FF9800",
+          padding: "12px",
+          color: "#fff",
+          background: "linear-gradient(90deg, #ff9800, #ff5722)",
+          fontWeight: "bold",
+          fontSize: "15px",
+        },
+      });
+    }
+
+    if (!cart || cart.length === 0) {
+      return toast.error("🛒 Your cart is empty, add some items first!", {
+        icon: "🛍️",
+        style: {
+          border: "1px solid #2196F3",
+          padding: "12px",
+          color: "#fff",
+          background: "#2196f3",
+          fontWeight: "bold",
+        },
+      });
+    }
+
+    const subtotal = getCartTotal();
+
+    // ✅ Minimum order value check
+    if (subtotal < 150) {
+      return toast.error(
+        "🚫 Minimum order value is ₹150, please add more items.",
+        {
+          icon: "⚡",
+          style: {
+            border: "1px solid #E91E63",
+            padding: "12px",
+            color: "#fff",
+            background: "linear-gradient(90deg, #e91e63, #9c27b0)",
+            fontWeight: "bold",
+            fontSize: "15px",
+          },
+        }
+      );
+    }
+
+    const pct = Math.max(0, Math.min(100, Number(appliedDiscountPercent) || 0));
+    const itemsWithSnapshot = cart.map((item) => {
+      const unitPrice = Number(item.price || 0);
+      const quantity = Number(item.quantity || 0);
+      const unitDiscountedPrice = Math.max(0, unitPrice * (1 - pct / 100));
+      const lineBaseTotal = unitPrice * quantity;
+      const lineDiscountedTotal = Math.max(0, unitDiscountedPrice * quantity);
+      return {
+        ...item,
+        unitPrice,
+        unitDiscountedPrice,
+        lineBaseTotal,
+        lineDiscountedTotal,
+        appliedDiscountPercent: pct,
+      };
+    });
+    const discountedTotal = itemsWithSnapshot.reduce(
+      (sum, it) => sum + Number(it.lineDiscountedTotal || 0),
+      0
+    );
     const orderID = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
     // Helper: wrap geolocation in a Promise
@@ -134,9 +230,8 @@ export function CartProvider({ children }) {
     };
 
     try {
-      toast.loading("Getting your location…");
+      toast.loading("📍 Getting your location…");
 
-      // ✅ Wait for location
       const coords = await getLocation();
 
       const orderPayload = {
@@ -147,8 +242,11 @@ export function CartProvider({ children }) {
         billingMobile: billingMobile || null,
         email: user.email,
         address,
-        items: cart,
-        total,
+        items: itemsWithSnapshot,
+        subtotal,
+        appliedDiscountPercent: pct,
+        discountedTotal,
+        total: discountedTotal,
         createdAt: timestamp(),
         location: {
           lat: coords.latitude,
@@ -156,16 +254,32 @@ export function CartProvider({ children }) {
         },
       };
 
-      // Save order in Firestore
       await addDoc(collection(db, "orders"), orderPayload);
 
       toast.dismiss();
-      toast.success("✅ Order placed successfully!");
+      toast.success("✅ Order placed successfully!", {
+        icon: "🎉",
+        style: {
+          border: "1px solid #4caf50",
+          padding: "12px",
+          color: "#fff",
+          background: "#4caf50",
+          fontWeight: "bold",
+        },
+      });
       clearCart();
     } catch (error) {
       console.error("[Order] Failed:", error);
       toast.dismiss();
-      toast.error("❌ Failed to get location or place order");
+      toast.error("❌ Failed to get location or place order", {
+        style: {
+          border: "1px solid #f44336",
+          padding: "12px",
+          color: "#fff",
+          background: "#f44336",
+          fontWeight: "bold",
+        },
+      });
     }
   };
 

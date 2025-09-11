@@ -1,4 +1,6 @@
 "use client";
+import Receipt from "@/components/Receipt";
+import PrintButton from "@/components/PrintButton";
 
 import { useState, useEffect } from "react";
 import { useRef } from "react";
@@ -39,6 +41,7 @@ import {
 } from "firebase/firestore";
 
 export default function AdminDashboard() {
+  const [imageUploaderKey, setImageUploaderKey] = useState(0);
   const router = useRouter();
   const todayStr = new Date().toISOString().slice(0, 10);
   const [inquiryDate, setInquiryDate] = useState(todayStr);
@@ -500,8 +503,25 @@ export default function AdminDashboard() {
     }
   };
 
-  const openConfirm = ({ title, message, confirmText = "OK", cancelText = "Cancel", theme = "danger", icon = "", onConfirm }) => {
-    setConfirmState({ open: true, title, message, confirmText, cancelText, theme, icon, onConfirm });
+  const openConfirm = ({
+    title,
+    message,
+    confirmText = "OK",
+    cancelText = "Cancel",
+    theme = "danger",
+    icon = "",
+    onConfirm,
+  }) => {
+    setConfirmState({
+      open: true,
+      title,
+      message,
+      confirmText,
+      cancelText,
+      theme,
+      icon,
+      onConfirm,
+    });
   };
   const closeConfirm = () => {
     setConfirmLoading(false);
@@ -535,6 +555,17 @@ export default function AdminDashboard() {
   }, [orders, playAlertForTenSeconds]);
   const handleAddItem = async (e) => {
     e.preventDefault();
+    // Validation: all fields required
+    if (
+      !formData.itemName.trim() ||
+      !formData.price ||
+      !formData.category.trim() ||
+      !formData.photoUrl.trim() ||
+      !formData.description.trim()
+    ) {
+      showNotification("All fields are required!", "error");
+      return;
+    }
     try {
       const payload = {
         itemName: formData.itemName,
@@ -551,6 +582,7 @@ export default function AdminDashboard() {
         photoUrl: "",
         description: "",
       });
+      setImageUploaderKey((k) => k + 1); // Reset image uploader
       showNotification("Menu item added successfully!");
     } catch (error) {
       console.error("[AdminDashboard] Failed to add item:", error);
@@ -592,7 +624,8 @@ export default function AdminDashboard() {
   const handleDeleteItem = async (id) => {
     openConfirm({
       title: "Delete Item",
-      message: "Are you sure you want to delete this item? This action cannot be undone.",
+      message:
+        "Are you sure you want to delete this item? This action cannot be undone.",
       confirmText: "Delete",
       cancelText: "Cancel",
       theme: "danger",
@@ -715,7 +748,15 @@ For any queries, contact us at our restaurant.`;
 
           // Send WhatsApp notification
           if (order.billingMobile) {
-            const message = `🍽️ *Asif's Briyani - Order Update* \n\n*Order ID:* ${order.orderID || `#${id}`}\n*Status:* ❌ REJECTED\n\nDear ${order.billingName || order.name},\n\nWe regret to inform you that your order has been rejected. This could be due to:\n• Item unavailability\n• Delivery area restrictions\n• Restaurant capacity\n\n*Order Details:*\n• Order Time: ${formatDate(order.createdAt)}\n• Delivery Address: ${order.address}\n\nWe apologize for any inconvenience caused. Please feel free to place a new order or contact us for assistance.\n\nThank you for considering Asif's Briyani! 🙏`;
+            const message = `🍽️ *Asif's Briyani - Order Update* \n\n*Order ID:* ${
+              order.orderID || `#${id}`
+            }\n*Status:* ❌ REJECTED\n\nDear ${
+              order.billingName || order.name
+            },\n\nWe regret to inform you that your order has been rejected. This could be due to:\n• Item unavailability\n• Delivery area restrictions\n• Restaurant capacity\n\n*Order Details:*\n• Order Time: ${formatDate(
+              order.createdAt
+            )}\n• Delivery Address: ${
+              order.address
+            }\n\nWe apologize for any inconvenience caused. Please feel free to place a new order or contact us for assistance.\n\nThank you for considering Asif's Briyani! 🙏`;
 
             await sendWhatsAppMessage(order.billingMobile, message);
           }
@@ -729,8 +770,33 @@ For any queries, contact us at our restaurant.`;
     });
   };
 
+  const [printOrder, setPrintOrder] = useState(null);
+  // ...existing code...
   return (
     <div className="min-h-screen h-screen w-full bg-gradient-to-br from-black to-gray-900 text-white overflow-auto">
+      {/* Print Layout Modal */}
+      {printOrder && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70"
+          onClick={() => setPrintOrder(null)}
+        >
+          <div
+            className="bg-white p-6 rounded-lg shadow-lg max-w-sm w-full relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div id="print-area-modal">
+              <Receipt order={printOrder} />
+            </div>
+            <button
+              className="absolute top-2 right-2 text-gray-500 hover:text-black"
+              onClick={() => setPrintOrder(null)}
+            >
+              &times;
+            </button>
+            <PrintButton printAreaId="print-area-modal" />
+          </div>
+        </div>
+      )}
       <audio
         ref={audioRef}
         src="/receiver.mp3?v=1"
@@ -1007,6 +1073,7 @@ For any queries, contact us at our restaurant.`;
                   />
                   <div className="mt-3">
                     <ImageUploader
+                      key={imageUploaderKey}
                       buttonLabel="Upload Image to Cloudinary"
                       onUploadComplete={(url) =>
                         setFormData({ ...formData, photoUrl: url })
@@ -1275,9 +1342,32 @@ For any queries, contact us at our restaurant.`;
                         </h4>
                         <div className="space-y-2">
                           {order.items?.map((i, idx) => {
-                            const itemPrice = Number(i.price || 0);
                             const qty = Number(i.quantity || 0);
-                            const itemTotal = itemPrice * qty;
+                            const unitPrice =
+                              i.unitPrice != null
+                                ? Number(i.unitPrice)
+                                : Number(i.price || 0);
+                            const unitDisc =
+                              i.unitDiscountedPrice != null
+                                ? Number(i.unitDiscountedPrice)
+                                : Math.max(
+                                    0,
+                                    unitPrice *
+                                      (1 -
+                                        Number(
+                                          order.appliedDiscountPercent || 0
+                                        ) /
+                                          100)
+                                  );
+                            const baseItem =
+                              i.lineBaseTotal != null
+                                ? Number(i.lineBaseTotal)
+                                : unitPrice * qty;
+                            const finalItem =
+                              i.lineDiscountedTotal != null
+                                ? Number(i.lineDiscountedTotal)
+                                : unitDisc * qty;
+                            const discounted = finalItem < baseItem - 1e-6;
                             return (
                               <div
                                 key={idx}
@@ -1289,13 +1379,24 @@ For any queries, contact us at our restaurant.`;
                                   </span>
                                   <div className="text-sm text-gray-300">
                                     <span>
-                                      ₹{itemPrice.toFixed(2)} × {qty}
+                                      ₹{unitPrice.toFixed(2)} × {qty}
                                     </span>
                                   </div>
                                 </div>
-                                <span className="text-yellow-400 font-bold">
-                                  ₹{itemTotal.toFixed(2)}
-                                </span>
+                                {discounted ? (
+                                  <div className="text-right">
+                                    <div className="text-gray-400 line-through">
+                                      ₹{baseItem.toFixed(2)}
+                                    </div>
+                                    <div className="text-yellow-400 font-bold">
+                                      ₹{finalItem.toFixed(2)}
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <span className="text-yellow-400 font-bold">
+                                    ₹{finalItem.toFixed(2)}
+                                  </span>
+                                )}
                               </div>
                             );
                           })}
@@ -1306,36 +1407,42 @@ For any queries, contact us at our restaurant.`;
                               Total:
                             </span>
                             {(() => {
-                              const pct = Number(discountPercent) || 0;
-                              const baseTotal =
-                                order.total != null
-                                  ? Number(order.total)
+                              const base =
+                                order.subtotal != null
+                                  ? Number(order.subtotal)
                                   : (order.items || []).reduce(
                                       (total, it) =>
                                         total +
-                                        Number(it.price || 0) *
-                                          Number(it.quantity || 0),
+                                        (it.lineBaseTotal != null
+                                          ? Number(it.lineBaseTotal)
+                                          : Number(it.price || 0) *
+                                            Number(it.quantity || 0)),
                                       0
                                     );
-                              const discounted = Math.max(
-                                0,
-                                baseTotal * (1 - pct / 100)
-                              );
-                              return pct > 0 ? (
-                                <div className="text-right">
-                                  <div className="text-gray-400 line-through">
-                                    ₹{baseTotal.toFixed(2)}
-                                  </div>
-                                  <div className="text-yellow-400 font-bold text-xl">
-                                    ₹{discounted.toFixed(2)}{" "}
-                                    <span className="text-xs text-green-400">
-                                      ({pct}% off)
-                                    </span>
-                                  </div>
-                                </div>
-                              ) : (
+                              const finalTotal =
+                                order.discountedTotal != null
+                                  ? Number(order.discountedTotal)
+                                  : (order.items || []).reduce(
+                                      (sum, it) =>
+                                        sum +
+                                        (it.lineDiscountedTotal != null
+                                          ? Number(it.lineDiscountedTotal)
+                                          : Math.max(
+                                              0,
+                                              Number(it.price || 0) *
+                                                (1 -
+                                                  Number(
+                                                    order.appliedDiscountPercent ||
+                                                      0
+                                                  ) /
+                                                    100) *
+                                                Number(it.quantity || 0)
+                                            )),
+                                      0
+                                    );
+                              return (
                                 <span className="text-yellow-400 font-bold text-xl">
-                                  ₹{baseTotal.toFixed(2)}
+                                  ₹{finalTotal.toFixed(2)}
                                 </span>
                               );
                             })()}
@@ -1450,6 +1557,13 @@ For any queries, contact us at our restaurant.`;
                               User Location
                             </button>
                           )}
+                          {/* Print Button */}
+                          <button
+                            className="bg-yellow-400 hover:bg-yellow-500 text-black px-4 py-2 rounded font-semibold mt-2"
+                            onClick={() => setPrintOrder(order)}
+                          >
+                            Print
+                          </button>
                         </div>
                         <div>
                           <h4 className="font-semibold text-yellow-400 mb-2">
@@ -1457,9 +1571,32 @@ For any queries, contact us at our restaurant.`;
                           </h4>
                           <div className="space-y-2">
                             {order.items?.map((i, idx) => {
-                              const itemPrice = Number(i.price || 0);
                               const qty = Number(i.quantity || 0);
-                              const itemTotal = itemPrice * qty;
+                              const unitPrice =
+                                i.unitPrice != null
+                                  ? Number(i.unitPrice)
+                                  : Number(i.price || 0);
+                              const unitDisc =
+                                i.unitDiscountedPrice != null
+                                  ? Number(i.unitDiscountedPrice)
+                                  : Math.max(
+                                      0,
+                                      unitPrice *
+                                        (1 -
+                                          Number(
+                                            order.appliedDiscountPercent || 0
+                                          ) /
+                                            100)
+                                    );
+                              const baseItem =
+                                i.lineBaseTotal != null
+                                  ? Number(i.lineBaseTotal)
+                                  : unitPrice * qty;
+                              const finalItem =
+                                i.lineDiscountedTotal != null
+                                  ? Number(i.lineDiscountedTotal)
+                                  : unitDisc * qty;
+                              const discounted = finalItem < baseItem - 1e-6;
                               return (
                                 <div
                                   key={idx}
@@ -1471,13 +1608,24 @@ For any queries, contact us at our restaurant.`;
                                     </span>
                                     <div className="text-sm text-gray-300">
                                       <span>
-                                        ₹{itemPrice.toFixed(2)} × {qty}
+                                        ₹{unitPrice.toFixed(2)} × {qty}
                                       </span>
                                     </div>
                                   </div>
-                                  <span className="text-yellow-400 font-bold">
-                                    ₹{itemTotal.toFixed(2)}
-                                  </span>
+                                  {discounted ? (
+                                    <div className="text-right">
+                                      <div className="text-gray-400 line-through">
+                                        ₹{baseItem.toFixed(2)}
+                                      </div>
+                                      <div className="text-yellow-400 font-bold">
+                                        ₹{finalItem.toFixed(2)}
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <span className="text-yellow-400 font-bold">
+                                      ₹{finalItem.toFixed(2)}
+                                    </span>
+                                  )}
                                 </div>
                               );
                             })}
@@ -1488,36 +1636,60 @@ For any queries, contact us at our restaurant.`;
                                 Total:
                               </span>
                               {(() => {
-                                const pct = Number(discountPercent) || 0;
-                                const baseTotal =
-                                  order.total != null
-                                    ? Number(order.total)
+                                const base =
+                                  order.subtotal != null
+                                    ? Number(order.subtotal)
                                     : (order.items || []).reduce(
                                         (total, it) =>
                                           total +
-                                          Number(it.price || 0) *
-                                            Number(it.quantity || 0),
+                                          (it.lineBaseTotal != null
+                                            ? Number(it.lineBaseTotal)
+                                            : Number(it.price || 0) *
+                                              Number(it.quantity || 0)),
                                         0
                                       );
-                                const discounted = Math.max(
-                                  0,
-                                  baseTotal * (1 - pct / 100)
-                                );
-                                return pct > 0 ? (
+                                const finalTotal =
+                                  order.discountedTotal != null
+                                    ? Number(order.discountedTotal)
+                                    : (order.items || []).reduce(
+                                        (sum, it) =>
+                                          sum +
+                                          (it.lineDiscountedTotal != null
+                                            ? Number(it.lineDiscountedTotal)
+                                            : Math.max(
+                                                0,
+                                                Number(it.price || 0) *
+                                                  (1 -
+                                                    Number(
+                                                      order.appliedDiscountPercent ||
+                                                        0
+                                                    ) /
+                                                      100) *
+                                                  Number(it.quantity || 0)
+                                              )),
+                                        0
+                                      );
+                                const snapshotPct =
+                                  Number(order.appliedDiscountPercent ?? 0) ||
+                                  0;
+                                const discounted = finalTotal < base - 1e-6;
+                                return discounted ? (
                                   <div className="text-right">
                                     <div className="text-gray-400 line-through">
-                                      ₹{baseTotal.toFixed(2)}
+                                      ₹{base.toFixed(2)}
                                     </div>
                                     <div className="text-yellow-400 font-bold text-xl">
-                                      ₹{discounted.toFixed(2)}{" "}
-                                      <span className="text-xs text-green-400">
-                                        ({pct}% off)
-                                      </span>
+                                      ₹{finalTotal.toFixed(2)}{" "}
+                                      {snapshotPct > 0 && (
+                                        <span className="text-xs text-green-400">
+                                          ({snapshotPct}% off)
+                                        </span>
+                                      )}
                                     </div>
                                   </div>
                                 ) : (
                                   <span className="text-yellow-400 font-bold text-xl">
-                                    ₹{baseTotal.toFixed(2)}
+                                    ₹{finalTotal.toFixed(2)}
                                   </span>
                                 );
                               })()}
@@ -1988,7 +2160,7 @@ For any queries, contact us at our restaurant.`;
           </div>
         </div>
       )}
-    {confirmState.open && (
+      {confirmState.open && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center">
           <div
             className="absolute inset-0 bg-black/70 backdrop-blur-sm"
@@ -2009,7 +2181,9 @@ For any queries, contact us at our restaurant.`;
                   <FaTimes className="text-xl" />
                 )}
               </div>
-              <h3 className="text-xl font-bold text-white">{confirmState.title}</h3>
+              <h3 className="text-xl font-bold text-white">
+                {confirmState.title}
+              </h3>
             </div>
             <p className="mt-3 text-gray-300">{confirmState.message}</p>
             <div className="mt-6 flex gap-3">
@@ -2041,7 +2215,9 @@ For any queries, contact us at our restaurant.`;
                 }`}
                 disabled={confirmLoading}
               >
-                {confirmLoading ? "Please wait…" : confirmState.confirmText || "OK"}
+                {confirmLoading
+                  ? "Please wait…"
+                  : confirmState.confirmText || "OK"}
               </button>
             </div>
           </div>

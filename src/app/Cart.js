@@ -33,9 +33,16 @@ export default function Cart() {
   const [outOfRange, setOutOfRange] = useState(false);
   const [lastDistanceKm, setLastDistanceKm] = useState(null);
   const [isFetchingLocation, setIsFetchingLocation] = useState(false);
-  const [adminCenter, setAdminCenter] = useState({ lat: 20.491026, lng: 77.866386 });
+  const [adminCenter, setAdminCenter] = useState({
+    lat: 20.491026,
+    lng: 77.866386,
+  });
   const [adminRadiusKm, setAdminRadiusKm] = useState(10);
   const [discountPercent, setDiscountPercent] = useState(0);
+
+  // NEW: Alert state
+  const [alertMessage, setAlertMessage] = useState("");
+  const [showAlert, setShowAlert] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -43,7 +50,10 @@ export default function Cart() {
         const snapshot = await getDocs(collection(db, "shop"));
         if (!snapshot.empty) {
           const data = snapshot.docs[0].data() || {};
-          if (typeof data.CityLat === "number" && typeof data.CityLng === "number") {
+          if (
+            typeof data.CityLat === "number" &&
+            typeof data.CityLng === "number"
+          ) {
             setAdminCenter({ lat: data.CityLat, lng: data.CityLng });
           }
           if (typeof data.DeliveryRadiusKm === "number") {
@@ -67,6 +77,12 @@ export default function Cart() {
     }));
   };
 
+  const showCustomAlert = (message) => {
+    setAlertMessage(message);
+    setShowAlert(true);
+    setTimeout(() => setShowAlert(false), 3000);
+  };
+
   const getDistanceKm = (lat1, lon1, lat2, lon2) => {
     const toRad = (v) => (v * Math.PI) / 180;
     const R = 6371; // km
@@ -74,8 +90,10 @@ export default function Cart() {
     const dLon = toRad(lon2 - lon1);
     const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
-        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      Math.cos(toRad(lat1)) *
+        Math.cos(toRad(lat2)) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
   };
@@ -99,22 +117,21 @@ export default function Cart() {
       !billingDetails.mobile ||
       !billingDetails.address
     ) {
-      alert("Please fill in all billing details");
+      showCustomAlert("⚠️ Please fill in all billing details!");
       return;
     }
 
     if (cart.length === 0) {
-      alert("Your cart is empty");
+      showCustomAlert("🛒 Your cart is empty!");
       return;
     }
 
     if (!user) {
-      alert("Please sign in with Google first");
+      showCustomAlert("👤 Please sign in with Google first!");
       return;
     }
 
     try {
-      // Gate by location using admin-defined center & radius
       const HOTEL_LAT = adminCenter.lat;
       const HOTEL_LNG = adminCenter.lng;
       const MAX_KM = adminRadiusKm;
@@ -123,7 +140,12 @@ export default function Cart() {
         const pos = await getCurrentPosition();
         const { latitude, longitude } = pos.coords || {};
         if (typeof latitude === "number" && typeof longitude === "number") {
-          const distanceKm = getDistanceKm(latitude, longitude, HOTEL_LAT, HOTEL_LNG);
+          const distanceKm = getDistanceKm(
+            latitude,
+            longitude,
+            HOTEL_LAT,
+            HOTEL_LNG
+          );
           if (distanceKm > MAX_KM) {
             setOutOfRange(true);
             setLastDistanceKm(distanceKm);
@@ -131,12 +153,18 @@ export default function Cart() {
           }
         }
       } catch (geoErr) {
-        // If user blocks or geolocation fails, block order to avoid out-of-area deliveries
-        alert("We couldn't verify your location. Please enable location access to place an order within 10 km of Ner, Yavatmal (Maharashtra).");
+        showCustomAlert(
+          "📍 We couldn't verify your location. Please enable location access."
+        );
         return;
       }
 
-      await placeOrder(billingDetails.address, billingDetails.name, billingDetails.mobile);
+      await placeOrder(
+        billingDetails.address,
+        billingDetails.name,
+        billingDetails.mobile,
+        discountPercent
+      );
       setBillingDetails({ name: "", mobile: "", address: "" });
       setOutOfRange(false);
       setLastDistanceKm(null);
@@ -154,10 +182,20 @@ export default function Cart() {
       const pos = await getCurrentPosition();
       const { latitude, longitude } = pos.coords || {};
       if (typeof latitude === "number" && typeof longitude === "number") {
-        const distanceKm = getDistanceKm(latitude, longitude, HOTEL_LAT, HOTEL_LNG);
+        const distanceKm = getDistanceKm(
+          latitude,
+          longitude,
+          HOTEL_LAT,
+          HOTEL_LNG
+        );
         setLastDistanceKm(distanceKm);
         if (distanceKm <= MAX_KM) {
-          await placeOrder(billingDetails.address);
+          await placeOrder(
+            billingDetails.address,
+            billingDetails.name,
+            billingDetails.mobile,
+            discountPercent
+          );
           setBillingDetails({ name: "", mobile: "", address: "" });
           setOutOfRange(false);
           setLastDistanceKm(null);
@@ -166,7 +204,9 @@ export default function Cart() {
       }
       setOutOfRange(true);
     } catch (e) {
-      alert("Couldn't get current location. Please enable location and try again.");
+      showCustomAlert(
+        "📍 Couldn't get current location. Please enable location and try again."
+      );
     } finally {
       setIsFetchingLocation(false);
     }
@@ -195,7 +235,14 @@ export default function Cart() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white py-10 sm:py-20">
+    <div className="min-h-screen bg-black text-white py-10 sm:py-20 relative">
+      {/* Custom Alert */}
+      {showAlert && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-gradient-to-r from-yellow-400 to-red-500 text-black font-bold px-6 py-4 rounded-lg shadow-lg animate-fadeInOut">
+          {alertMessage}
+        </div>
+      )}
+
       <div className="container mx-auto px-2 sm:px-4">
         <h1 className="text-3xl sm:text-4xl font-bold text-yellow-400 mb-6 sm:mb-8 text-center">
           Your Cart
@@ -219,7 +266,9 @@ export default function Cart() {
                     <h3 className="text-base sm:text-lg font-semibold text-yellow-400">
                       {item.itemName}
                     </h3>
-                    <p className="text-gray-400 text-xs sm:text-sm">₹{item.price} per item</p>
+                    <p className="text-gray-400 text-xs sm:text-sm">
+                      ₹{item.price} per item
+                    </p>
                   </div>
 
                   <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-3 w-full sm:w-auto">
@@ -246,9 +295,27 @@ export default function Cart() {
                     </div>
 
                     <div className="text-right">
-                      <p className="text-lg font-bold text-yellow-400">
-                        ₹{item.price * item.quantity}
-                      </p>
+                      {(() => {
+                        const pct = Number(discountPercent) || 0;
+                        const unit = Number(item.price || 0);
+                        const qty = Number(item.quantity || 0);
+                        const base = unit * qty;
+                        const final = Math.max(0, unit * (1 - pct / 100)) * qty;
+                        return pct > 0 ? (
+                          <div className="text-right">
+                            <div className="text-gray-400 line-through">
+                              ₹{base.toFixed(2)}
+                            </div>
+                            <div className="text-lg font-bold text-yellow-400">
+                              ₹{final.toFixed(2)}
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="text-lg font-bold text-yellow-400">
+                            ₹{base.toFixed(2)}
+                          </p>
+                        );
+                      })()}
                     </div>
 
                     <button
@@ -265,17 +332,31 @@ export default function Cart() {
             <div className="mt-4 sm:mt-6 pt-4 border-t border-gray-700">
               <div className="flex justify-between items-center text-lg sm:text-xl font-bold">
                 <span>Total:</span>
-                <span className="text-yellow-400">₹{(() => {
-                  const raw = getCartTotal();
-                  const pct = Number(discountPercent) || 0;
-                  const discounted = Math.max(0, raw * (1 - pct / 100));
-                  return discounted.toFixed(2);
-                })()}</span>
+                <span className="text-yellow-400">
+                  ₹
+                  {(() => {
+                    const pct = Number(discountPercent) || 0;
+                    const discounted = cart.reduce((sum, it) => {
+                      const p = Number(it.price || 0);
+                      const q = Number(it.quantity || 0);
+                      const unitDisc = Math.max(0, p * (1 - pct / 100));
+                      return sum + unitDisc * q;
+                    }, 0);
+                    return discounted.toFixed(2);
+                  })()}
+                </span>
               </div>
               {Number(discountPercent) > 0 && (
                 <div className="text-right text-xs sm:text-sm text-gray-400 mt-1">
-                  <span className="line-through mr-2">₹{getCartTotal().toFixed ? getCartTotal().toFixed(2) : getCartTotal()}</span>
-                  <span className="text-green-400">({Number(discountPercent)}% off applied)</span>
+                  <span className="line-through mr-2">
+                    ₹
+                    {getCartTotal().toFixed
+                      ? getCartTotal().toFixed(2)
+                      : getCartTotal()}
+                  </span>
+                  <span className="text-green-400">
+                    ({Number(discountPercent)}% off applied)
+                  </span>
                 </div>
               )}
             </div>
@@ -359,11 +440,16 @@ export default function Cart() {
             <div className="mt-6 sm:mt-8 space-y-4">
               {outOfRange && (
                 <div className="p-3 sm:p-4 rounded-lg border border-red-600 bg-red-900/40 text-red-200">
-                  <div className="font-semibold mb-2">Out of delivery range</div>
+                  <div className="font-semibold mb-2">
+                    Out of delivery range
+                  </div>
                   <div className="text-xs sm:text-sm mb-3">
                     We currently deliver within 10 km only.
                     {typeof lastDistanceKm === "number" && (
-                      <span> Your distance is ~{lastDistanceKm.toFixed(1)} km.</span>
+                      <span>
+                        {" "}
+                        Your distance is ~{lastDistanceKm.toFixed(1)} km.
+                      </span>
                     )}
                   </div>
                   <button
@@ -371,7 +457,9 @@ export default function Cart() {
                     disabled={isFetchingLocation}
                     className="bg-yellow-400 disabled:opacity-60 text-black px-4 py-2 rounded font-semibold hover:bg-yellow-500 w-full"
                   >
-                    {isFetchingLocation ? "Checking..." : "Use current location"}
+                    {isFetchingLocation
+                      ? "Checking..."
+                      : "Use current location"}
                   </button>
                 </div>
               )}
@@ -380,9 +468,13 @@ export default function Cart() {
                 className="w-full bg-gradient-to-r from-yellow-400 to-yellow-600 text-black py-4 rounded-lg font-bold text-base sm:text-lg hover:shadow-lg hover:shadow-yellow-400/25 transition-all duration-200"
               >
                 {(() => {
-                  const raw = Number(getCartTotal() || 0);
                   const pct = Number(discountPercent) || 0;
-                  const discounted = Math.max(0, raw * (1 - pct / 100));
+                  const discounted = cart.reduce((sum, it) => {
+                    const p = Number(it.price || 0);
+                    const q = Number(it.quantity || 0);
+                    const unitDisc = Math.max(0, p * (1 - pct / 100));
+                    return sum + unitDisc * q;
+                  }, 0);
                   return `Place Order - ₹${discounted.toFixed(2)}`;
                 })()}
               </button>
@@ -397,6 +489,31 @@ export default function Cart() {
           </div>
         </div>
       </div>
+
+      {/* Animations for custom alert */}
+      <style jsx>{`
+        @keyframes fadeInOut {
+          0% {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          10% {
+            opacity: 1;
+            transform: translateY(0);
+          }
+          90% {
+            opacity: 1;
+            transform: translateY(0);
+          }
+          100% {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+        }
+        .animate-fadeInOut {
+          animation: fadeInOut 3s ease forwards;
+        }
+      `}</style>
     </div>
   );
 }

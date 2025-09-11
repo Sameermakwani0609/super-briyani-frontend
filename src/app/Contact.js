@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { db } from "../../lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import {
@@ -22,6 +22,16 @@ export default function Contact() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState("");
+  const [errors, setErrors] = useState({});
+
+  useEffect(() => {
+    if (submitMessage && submitMessage.includes("successfully")) {
+      const t = setTimeout(() => {
+        setSubmitMessage("");
+      }, 12000); // auto-hide after ~12s
+      return () => clearTimeout(t);
+    }
+  }, [submitMessage]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -29,12 +39,18 @@ export default function Contact() {
       ...prev,
       [name]: value
     }));
+    setErrors(prev => ({ ...prev, [name]: undefined }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsSubmitting(true);
     setSubmitMessage("");
+    if (!validate()) {
+      setIsSubmitting(false);
+      setSubmitMessage("Please correct the highlighted fields.");
+      return;
+    }
+    setIsSubmitting(true);
 
     try {
       const inquiryData = {
@@ -63,20 +79,31 @@ export default function Contact() {
       setIsSubmitting(false);
     }
   };
+
+  const validate = () => {
+    const errs = {};
+    if (!formData.name?.trim()) errs.name = "Name is required";
+    if (!formData.email?.trim()) errs.email = "Email is required";
+    else if (!/^\S+@\S+\.\S+$/.test(formData.email)) errs.email = "Enter a valid email";
+    if (!formData.subject?.trim()) errs.subject = "Subject is required";
+    if (!formData.message?.trim()) errs.message = "Message is required";
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
   return (
     <section id="contact" className="py-20">
       <div className="container mx-auto px-6">
         {/* Section Header */}
         <div className="text-center mb-16">
-          <h3 className="text-5xl playfair font-bold text-yellow-400 mb-4">
+          <h3 className="text-4xl md:text-5xl playfair font-bold text-yellow-400 mb-4">
             Contact Us
           </h3>
-          <p className="text-xl text-gray-300">
+          <p className="text-lg md:text-xl text-gray-300">
             Get in touch for reservations and inquiries
           </p>
         </div>
 
-        <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-12">
+        <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-8 md:gap-12">
           {/* Visit Info / Contact Info */}
           <div>
             <h4 className="text-2xl playfair font-bold text-yellow-400 mb-6">
@@ -109,7 +136,7 @@ export default function Contact() {
             </div>
 
             {/* Social Icons (Only Instagram & WhatsApp) */}
-            <div className="flex space-x-4 mt-4">
+            <div className="flex space-x-3 sm:space-x-4 mt-4">
               {[
                 { icon: <FaInstagram />, color: "#E1306C" },
                 { icon: <FaWhatsapp />, color: "#25D366" },
@@ -127,30 +154,38 @@ export default function Contact() {
           </div>
 
           {/* Contact Form */}
-          <div className="dark-glass rounded-2xl p-8">
+          <div className="dark-glass rounded-2xl p-6 md:p-8">
             <h4 className="text-2xl playfair font-bold text-yellow-400 mb-6">
               Send us a Message
             </h4>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid md:grid-cols-2 gap-4">
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  placeholder="Your Name"
-                  className="bg-black/50 border border-yellow-400/30 rounded-lg px-4 py-3 focus:border-yellow-400 focus:outline-none text-white"
-                  required
-                />
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  placeholder="Your Email"
-                  className="bg-black/50 border border-yellow-400/30 rounded-lg px-4 py-3 focus:border-yellow-400 focus:outline-none text-white"
-                  required
-                />
+                <div>
+                  <input
+                    type="text"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    placeholder="Your Name"
+                    aria-invalid={!!errors.name}
+                    className={`bg-black/50 border ${errors.name ? 'border-red-500 focus:border-red-500' : 'border-yellow-400/30 focus:border-yellow-400'} rounded-lg px-4 py-3 focus:outline-none text-white`}
+                    required
+                  />
+                  {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
+                </div>
+                <div>
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    placeholder="Your Email"
+                    aria-invalid={!!errors.email}
+                    className={`bg-black/50 border ${errors.email ? 'border-red-500 focus:border-red-500' : 'border-yellow-400/30 focus:border-yellow-400'} rounded-lg px-4 py-3 focus:outline-none text-white`}
+                    required
+                  />
+                  {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
+                </div>
               </div>
               <input
                 type="text"
@@ -158,18 +193,22 @@ export default function Contact() {
                 value={formData.subject}
                 onChange={handleInputChange}
                 placeholder="Subject"
-                className="w-full bg-black/50 border border-yellow-400/30 rounded-lg px-4 py-3 focus:border-yellow-400 focus:outline-none text-white"
+                aria-invalid={!!errors.subject}
+                className={`w-full bg-black/50 border ${errors.subject ? 'border-red-500 focus:border-red-500' : 'border-yellow-400/30 focus:border-yellow-400'} rounded-lg px-4 py-3 focus:outline-none text-white`}
                 required
               />
+              {errors.subject && <p className="text-red-500 text-xs mt-1">{errors.subject}</p>}
               <textarea
                 name="message"
                 value={formData.message}
                 onChange={handleInputChange}
                 placeholder="Your Message"
                 rows="5"
-                className="w-full bg-black/50 border border-yellow-400/30 rounded-lg px-4 py-3 focus:border-yellow-400 focus:outline-none text-white"
+                aria-invalid={!!errors.message}
+                className={`w-full bg-black/50 border ${errors.message ? 'border-red-500 focus:border-red-500' : 'border-yellow-400/30 focus:border-yellow-400'} rounded-lg px-4 py-3 focus:outline-none text-white`}
                 required
               ></textarea>
+              {errors.message && <p className="text-red-500 text-xs mt-1">{errors.message}</p>}
 
               {submitMessage && (
                 <div className={`p-3 rounded-lg text-center ${

@@ -47,7 +47,8 @@ export default function FeaturedMenu() {
         let discount = 0;
         snap.forEach((d) => {
           const data = d.data() || {};
-          if (typeof data.DiscountPercent === "number") discount = data.DiscountPercent;
+          if (typeof data.DiscountPercent === "number")
+            discount = data.DiscountPercent;
         });
         setDiscountPercent(discount);
       } catch {}
@@ -69,36 +70,48 @@ export default function FeaturedMenu() {
     const discounted = Math.max(0, price * (1 - pct / 100));
     const showDiscount = pct > 0 && discounted !== price;
     return (
-      <div className="relative bg-black/70 backdrop-blur-md border border-gray-300 rounded-2xl p-6 flex flex-col justify-between items-center w-full h-80 max-w-xs mx-auto
-        transition-all duration-300 hover:-translate-y-2 hover:shadow-lg hover:shadow-yellow-300/50 group">
+      <div className="relative bg-gradient-to-b from-black/70 to-black backdrop-blur-md border border-gray-800 rounded-2xl p-5 md:p-6 xl:p-7 flex flex-col justify-between items-center w-full h-auto min-h-[22rem] md:min-h-[24rem] transition-all duration-300 shadow-lg shadow-black/40 ring-1 ring-yellow-400/10">
+        {showDiscount && (
+          <div className="absolute top-3 right-3 bg-yellow-400 text-black text-xs font-bold px-2 py-1 rounded-md shadow-md">
+            Save {pct}%
+          </div>
+        )}
         {/* Image */}
-        <div className="h-32 w-full rounded-xl mb-4 flex items-center justify-center overflow-hidden">
+        <div className="h-36 md:h-40 xl:h-44 w-full rounded-xl mb-5 flex items-center justify-center overflow-hidden bg-black/40 border border-gray-800 p-2">
           {item.photoUrl ? (
             <img
               src={item.photoUrl}
               alt={item.itemName}
-              className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105"
+              className="w-full h-full object-contain transition-transform duration-500"
             />
           ) : (
             <span className="text-gray-400">No Image</span>
           )}
         </div>
         {/* Title */}
-        <h4 className="text-lg font-playfair font-bold mb-1 text-yellow-400 text-center">
+        <h4 className="text-xl md:text-2xl font-playfair font-bold mb-1 text-yellow-400 text-center">
           {item.itemName}
         </h4>
         {/* Description */}
-        <p className="text-gray-300 mb-2 text-sm text-center">{item.description}</p>
+        <p className="text-gray-300 mb-3 text-sm md:text-base text-center">
+          {item.description}
+        </p>
         {/* Price */}
-        <div className="flex items-center justify-center mb-2">
+        <div className="flex items-center justify-center mb-3">
           {showDiscount ? (
             <div className="flex items-center gap-2">
-              <span className="line-through text-gray-400">₹{price.toFixed(2)}</span>
-              <span className="text-lg font-bold text-yellow-400">₹{discounted.toFixed(2)}</span>
+              <span className="line-through text-gray-400">
+                ₹{price.toFixed(2)}
+              </span>
+              <span className="text-lg font-bold text-yellow-400">
+                ₹{discounted.toFixed(2)}
+              </span>
               <span className="text-xs text-green-400">({pct}% off)</span>
             </div>
           ) : (
-            <span className="text-lg font-bold text-yellow-400">₹{price.toFixed(2)}</span>
+            <span className="text-lg font-bold text-yellow-400">
+              ₹{price.toFixed(2)}
+            </span>
           )}
         </div>
         {/* Add to Cart or Quantity Controls */}
@@ -113,23 +126,21 @@ export default function FeaturedMenu() {
           <div className="flex items-center justify-center space-x-2 mt-2">
             <button
               onClick={() => updateQuantity(item.id, quantity - 1)}
-              className="bg-yellow-400 text-black w-8 h-8 rounded-full flex items-center justify-center font-bold hover:bg-yellow-500 transition-colors"
+              className="bg-yellow-400 text-black w-8 h-8 md:w-9 md:h-9 rounded-full flex items-center justify-center font-bold hover:bg-yellow-500 transition-colors"
             >
               <FaMinus />
             </button>
-            <span className="text-lg font-bold text-yellow-400 w-8 text-center">
+            <span className="text-lg font-bold text-yellow-400 w-8 md:w-9 text-center">
               {quantity}
             </span>
             <button
               onClick={() => updateQuantity(item.id, quantity + 1)}
-              className="bg-yellow-400 text-black w-8 h-8 rounded-full flex items-center justify-center font-bold hover:bg-yellow-500 transition-colors"
+              className="bg-yellow-400 text-black w-8 h-8 md:w-9 md:h-9 rounded-full flex items-center justify-center font-bold hover:bg-yellow-500 transition-colors"
             >
               <FaPlus />
             </button>
           </div>
         )}
-        {/* Glow effect */}
-        <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-15 bg-yellow-400 blur-xl transition-all pointer-events-none"></div>
       </div>
     );
   };
@@ -146,35 +157,57 @@ export default function FeaturedMenu() {
             Discover our most celebrated dishes
           </p>
         </div>
-        {/* Show Carousel if >3 else Grid */}
-        {menuItems.length > 3 ? (
-          <Swiper
-            modules={[Pagination]}
-            spaceBetween={16}
-            slidesPerView={1}
-            breakpoints={{
-              640: { slidesPerView: 1 },
-              768: { slidesPerView: 2 },
-              1024: { slidesPerView: 3 }
-            }}
-            pagination={{ clickable: true }}
-            loop={true}
-            autoplay={{ delay: 3000 }}
-            className="pb-10"
-          >
-            {menuItems.map((item) => (
-              <SwiperSlide key={item.id}>
-                <Card item={item} />
-              </SwiperSlide>
-            ))}
-          </Swiper>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {menuItems.map((item) => (
-              <Card key={item.id} item={item} />
-            ))}
-          </div>
-        )}
+        {/* Show Swiper on mobile/tablet; horizontal scroll on desktop when >4 */}
+        <div className="block lg:hidden">
+          {menuItems.length > 3 ? (
+            <Swiper
+              modules={[Pagination]}
+              spaceBetween={20}
+              slidesPerView={1}
+              breakpoints={{
+                640: { slidesPerView: 1 },
+                768: { slidesPerView: 2 },
+                1024: { slidesPerView: 3 },
+              }}
+              pagination={{ clickable: true }}
+              loop={true}
+              autoplay={{ delay: 3000 }}
+              className="pb-10"
+            >
+              {menuItems.map((item) => (
+                <SwiperSlide key={item.id}>
+                  <Card item={item} />
+                </SwiperSlide>
+              ))}
+            </Swiper>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 xl:gap-10">
+              {menuItems.map((item) => (
+                <Card key={item.id} item={item} />
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="hidden lg:block">
+          {menuItems.length > 4 ? (
+            <div className="menu-scroll overflow-x-auto pb-4">
+              <div className="flex items-stretch gap-8 pr-4">
+                {menuItems.map((item) => (
+                  <div key={item.id} className="shrink-0 w-[22rem]">
+                    <Card item={item} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 xl:grid-cols-4 gap-8 xl:gap-10">
+              {menuItems.map((item) => (
+                <Card key={item.id} item={item} />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
       {/* Swiper theme overrides */}
       <style jsx global>{`
@@ -185,6 +218,22 @@ export default function FeaturedMenu() {
         }
         .swiper-pagination-bullet-active {
           background: #f59e0b !important; /* Tailwind yellow-500 */
+        }
+
+        /* Desktop horizontal scroll styling */
+        .menu-scroll {
+          scrollbar-width: thin;
+          scrollbar-color: #facc15 transparent;
+        }
+        .menu-scroll::-webkit-scrollbar {
+          height: 10px;
+        }
+        .menu-scroll::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .menu-scroll::-webkit-scrollbar-thumb {
+          background-color: #facc15;
+          border-radius: 9999px;
         }
       `}</style>
     </section>
