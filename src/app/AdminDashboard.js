@@ -1056,6 +1056,7 @@ For any queries, contact us at our restaurant.`;
                     <option value="Dessert">Dessert</option>
                     <option value="Beverage">Beverage</option>
                     <option value="Special">Special</option>
+                    <option value="Veg">Veg</option>
                   </select>
                 </div>
                 <div>
@@ -2099,6 +2100,7 @@ For any queries, contact us at our restaurant.`;
                   <option value="Dessert">Dessert</option>
                   <option value="Beverage">Beverage</option>
                   <option value="Special">Special</option>
+                  <option value="Veg">Veg</option>
                 </select>
               </div>
               <div>
