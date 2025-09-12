@@ -1109,6 +1109,31 @@ For any queries, contact us at our restaurant.`;
         )}
         {activeTab === "view-items" && (
           <>
+            {/* Total Items Card */}
+            <div className="flex justify-center mb-6">
+              <div className="flex items-center gap-4 bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-400 shadow-xl border-4 border-yellow-500 rounded-2xl px-8 py-5 animate-fade-in">
+                <div className="bg-white rounded-full p-3 shadow-lg flex items-center justify-center">
+                  <FaUtensils className="text-yellow-500 text-3xl" />
+                </div>
+                <div className="flex flex-col items-start">
+                  <span className="text-lg font-bold text-gray-900 tracking-wide">
+                    Total Menu Items
+                  </span>
+                  <span className="text-3xl font-extrabold text-yellow-900 drop-shadow-lg">
+                    {menuItems.length}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <style>{`
+              @keyframes fade-in {
+                from { opacity: 0; transform: translateY(-10px); }
+                to { opacity: 1; transform: translateY(0); }
+              }
+              .animate-fade-in {
+                animation: fade-in 0.7s cubic-bezier(0.4,0,0.2,1);
+              }
+            `}</style>
             <div className="hidden md:block bg-gray-900 rounded-lg border border-yellow-500 shadow-lg overflow-x-auto">
               <table className="w-full text-white">
                 <thead className="bg-yellow-400 text-black">
