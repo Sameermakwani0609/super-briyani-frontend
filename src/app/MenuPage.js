@@ -16,15 +16,15 @@ export default function MenuPage() {
   const { addToCart, cart, updateQuantity } = useCart();
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(6);
+  const [itemsPerPage, setItemsPerPage] = useState(9);
 
   // Responsive pagination: 3 per page on mobile, 6 on desktop
   useEffect(() => {
     function handleResize() {
       if (window.innerWidth < 640) {
-        setItemsPerPage(3);
+        setItemsPerPage(9);
       } else {
-        setItemsPerPage(6);
+        setItemsPerPage(9);
       }
     }
     handleResize();
