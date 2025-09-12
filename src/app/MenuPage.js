@@ -7,14 +7,30 @@ import { useCart } from "./CartContext";
 import { db } from "../../lib/firebase";
 import { collection, getDocs, doc, getDoc } from "firebase/firestore";
 
-
 export default function MenuPage() {
   const [menuItems, setMenuItems] = useState([]);
   const [categories, setCategories] = useState([]);
   const [filter, setFilter] = useState("all");
   const [isOpen, setIsOpen] = useState(null); // Track shop open status
   const [discountPercent, setDiscountPercent] = useState(0);
-  const { addToCart, cart, updateQuantity } = useCart(); // <-- add cart, updateQuantity
+  const { addToCart, cart, updateQuantity } = useCart();
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(6);
+
+  // Responsive pagination: 3 per page on mobile, 6 on desktop
+  useEffect(() => {
+    function handleResize() {
+      if (window.innerWidth < 640) {
+        setItemsPerPage(3);
+      } else {
+        setItemsPerPage(6);
+      }
+    }
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   // Map category names to icons
   const categoryIcons = {
@@ -35,7 +51,8 @@ export default function MenuPage() {
         shopSnapshot.forEach((doc) => {
           const data = doc.data() || {};
           if (data.IsOpen !== undefined) openStatus = data.IsOpen;
-          if (typeof data.DiscountPercent === "number") discount = data.DiscountPercent;
+          if (typeof data.DiscountPercent === "number")
+            discount = data.DiscountPercent;
         });
         setIsOpen(openStatus);
         setDiscountPercent(discount);
@@ -84,6 +101,10 @@ export default function MenuPage() {
       : menuItems.filter(
           (item) => item.category.toLowerCase() === filter.toLowerCase()
         );
+
+  // Pagination logic
+  const paginatedItems = filteredItems.slice(0, currentPage * itemsPerPage);
+  const hasMore = paginatedItems.length < filteredItems.length;
 
   const handleAddToCart = (item) => {
     addToCart(item);
@@ -156,7 +177,7 @@ export default function MenuPage() {
 
         {/* Menu Items Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-          {filteredItems.map((item) => {
+          {paginatedItems.map((item) => {
             const quantity = getCartQuantity(item.id);
             const pct = Number(discountPercent) || 0;
             const price = Number(item.price || 0);
@@ -185,9 +206,15 @@ export default function MenuPage() {
                 <div className="text-xl mb-4">
                   {showDiscount ? (
                     <div className="flex items-center justify-center gap-2">
-                      <span className="line-through text-gray-400">₹{price.toFixed(2)}</span>
-                      <span className="text-yellow-400 font-bold">₹{discounted.toFixed(2)}</span>
-                      <span className="text-xs text-green-400">({pct}% off)</span>
+                      <span className="line-through text-gray-400">
+                        ₹{price.toFixed(2)}
+                      </span>
+                      <span className="text-yellow-400 font-bold">
+                        ₹{discounted.toFixed(2)}
+                      </span>
+                      <span className="text-xs text-green-400">
+                        ({pct}% off)
+                      </span>
                     </div>
                   ) : (
                     <span>₹{price.toFixed(2)}</span>
@@ -224,6 +251,17 @@ export default function MenuPage() {
             );
           })}
         </div>
+        {/* Load More Button */}
+        {hasMore && (
+          <div className="flex justify-center mt-8">
+            <button
+              onClick={() => setCurrentPage((prev) => prev + 1)}
+              className="bg-yellow-400 text-black px-6 py-2 rounded-lg font-semibold hover:bg-yellow-500 transition-colors shadow-lg"
+            >
+              Load More
+            </button>
+          </div>
+        )}
       </div>
     </section>
   );
