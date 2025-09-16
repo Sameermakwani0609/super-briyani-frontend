@@ -5,20 +5,19 @@ import { GiChickenOven, GiCupcake, GiKnifeFork } from "react-icons/gi";
 import { FaMinus, FaPlus } from "react-icons/fa";
 import { useCart } from "./CartContext";
 import { db } from "../../lib/firebase";
-import { collection, getDocs, doc, getDoc } from "firebase/firestore";
+import { collection, getDocs } from "firebase/firestore";
 
 export default function MenuPage() {
   const [menuItems, setMenuItems] = useState([]);
   const [categories, setCategories] = useState([]);
   const [filter, setFilter] = useState("all");
-  const [isOpen, setIsOpen] = useState(null); // Track shop open status
+  const [searchQuery, setSearchQuery] = useState(""); // New state for search
+  const [isOpen, setIsOpen] = useState(null);
   const [discountPercent, setDiscountPercent] = useState(0);
   const { addToCart, cart, updateQuantity } = useCart();
-  // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(9);
 
-  // Responsive pagination: 3 per page on mobile, 6 on desktop
   useEffect(() => {
     function handleResize() {
       if (window.innerWidth < 640) {
@@ -32,7 +31,6 @@ export default function MenuPage() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Map category names to icons
   const categoryIcons = {
     "main course": GiChickenOven,
     starters: GiKnifeFork,
@@ -40,10 +38,8 @@ export default function MenuPage() {
     all: GiKnifeFork,
   };
 
-  // Fetch shop status and menu items
   useEffect(() => {
     const fetchShopStatusAndMenu = async () => {
-      // Fetch shop status from collection
       try {
         const shopSnapshot = await getDocs(collection(db, "shop"));
         let openStatus = false;
@@ -60,7 +56,6 @@ export default function MenuPage() {
         setIsOpen(false);
       }
 
-      // try cache first
       try {
         const cached = sessionStorage.getItem("menuItemsCache");
         if (cached) {
@@ -84,7 +79,6 @@ export default function MenuPage() {
         sessionStorage.setItem("menuItemsCache", JSON.stringify(items));
       } catch {}
 
-      // Extract unique categories from items
       const uniqueCategories = [
         "all",
         ...new Set(items.map((item) => item.category.toLowerCase())),
@@ -95,14 +89,15 @@ export default function MenuPage() {
     fetchShopStatusAndMenu();
   }, []);
 
-  const filteredItems =
-    filter === "all"
-      ? menuItems
-      : menuItems.filter(
-          (item) => item.category.toLowerCase() === filter.toLowerCase()
-        );
+  const filteredItems = menuItems.filter((item) => {
+    const matchesCategory =
+      filter === "all" || item.category.toLowerCase() === filter.toLowerCase();
+    const matchesSearch = item.itemName
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
 
-  // Pagination logic
   const paginatedItems = filteredItems.slice(0, currentPage * itemsPerPage);
   const hasMore = paginatedItems.length < filteredItems.length;
 
@@ -110,13 +105,11 @@ export default function MenuPage() {
     addToCart(item);
   };
 
-  // Helper to get quantity in cart for an item
   const getCartQuantity = (itemId) => {
     const found = cart?.find((cartItem) => cartItem.id === itemId);
     return found ? found.quantity : 0;
   };
 
-  // If isOpen is null, show nothing (loading)
   if (isOpen === null) {
     return (
       <section className="pt-24 pb-16 bg-black text-white">
@@ -129,7 +122,6 @@ export default function MenuPage() {
     );
   }
 
-  // If shop is closed
   if (!isOpen) {
     return (
       <section className="pt-24 pb-16 bg-black text-white">
@@ -143,14 +135,27 @@ export default function MenuPage() {
     );
   }
 
-  // If shop is open, show menu
   return (
     <section className="pt-20 pb-10 bg-black text-white min-h-screen">
       <div className="container mx-auto px-2 sm:px-4">
         {/* Heading */}
-        <h2 className="text-3xl sm:text-5xl font-bold text-center text-yellow-400 mb-8 sm:mb-12 drop-shadow-lg">
+        <h2 className="text-3xl sm:text-5xl font-bold text-center text-yellow-400 mb-4 sm:mb-6 drop-shadow-lg">
           Our Menu
         </h2>
+
+        {/* Search Bar */}
+        <div className="flex justify-center mb-6 sm:mb-8 px-4">
+          <input
+            type="text"
+            placeholder="🔍 Search for items..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full sm:max-w-md px-5 py-3 rounded-xl border border-yellow-400 
+                       bg-black text-white placeholder-yellow-400 
+                       focus:outline-none focus:ring-2 focus:ring-yellow-400 
+                       focus:shadow-lg text-base sm:text-lg transition-all"
+          />
+        </div>
 
         {/* Menu Categories */}
         <div className="flex justify-center mb-6 sm:mb-8">
@@ -188,7 +193,6 @@ export default function MenuPage() {
                 key={item.id}
                 className="bg-yellow-400/10 border border-yellow-400 rounded-xl p-6 text-center hover:scale-105 hover:bg-yellow-400/20 transition-all"
               >
-                {/* Image */}
                 <div className="mb-4 h-40 w-full overflow-hidden rounded-lg flex items-center justify-center">
                   {item.photoUrl ? (
                     <img
@@ -220,7 +224,6 @@ export default function MenuPage() {
                     <span>₹{price.toFixed(2)}</span>
                   )}
                 </div>
-                {/* Add to Cart or Quantity Controls */}
                 {quantity === 0 ? (
                   <button
                     onClick={() => handleAddToCart(item)}
@@ -251,6 +254,7 @@ export default function MenuPage() {
             );
           })}
         </div>
+
         {/* Load More Button */}
         {hasMore && (
           <div className="flex justify-center mt-8">

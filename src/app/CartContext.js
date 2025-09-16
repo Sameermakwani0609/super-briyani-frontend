@@ -178,24 +178,6 @@ export function CartProvider({ children }) {
 
     const subtotal = getCartTotal();
 
-    // ✅ Minimum order value check
-    if (subtotal < 150) {
-      return toast.error(
-        "🚫 Minimum order value is ₹150, please add more items.",
-        {
-          icon: "⚡",
-          style: {
-            border: "1px solid #E91E63",
-            padding: "12px",
-            color: "#fff",
-            background: "linear-gradient(90deg, #e91e63, #9c27b0)",
-            fontWeight: "bold",
-            fontSize: "15px",
-          },
-        }
-      );
-    }
-
     const pct = Math.max(0, Math.min(100, Number(appliedDiscountPercent) || 0));
     const itemsWithSnapshot = cart.map((item) => {
       const unitPrice = Number(item.price || 0);
@@ -216,6 +198,23 @@ export function CartProvider({ children }) {
       (sum, it) => sum + Number(it.lineDiscountedTotal || 0),
       0
     );
+    // ✅ Minimum order value check
+    if (discountedTotal < 150) {
+      return toast.error(
+        "🚫 Minimum order value is ₹150, please add more items.",
+        {
+          icon: "⚡",
+          style: {
+            border: "1px solid #E91E63",
+            padding: "12px",
+            color: "#fff",
+            background: "linear-gradient(90deg, #e91e63, #9c27b0)",
+            fontWeight: "bold",
+            fontSize: "15px",
+          },
+        }
+      );
+    }
     const orderID = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
     // Helper: wrap geolocation in a Promise

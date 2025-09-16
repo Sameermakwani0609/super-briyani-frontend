@@ -105,6 +105,7 @@ export default function AdminDashboard() {
     onConfirm: null,
   });
   const [confirmLoading, setConfirmLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState(""); // <-- Add this state
 
   const formatDate = (ts) => {
     if (!ts) return "";
@@ -1109,6 +1110,31 @@ For any queries, contact us at our restaurant.`;
         )}
         {activeTab === "view-items" && (
           <>
+            {/* Search Bar */}
+            <div className="flex justify-center mb-6">
+              <div className="relative w-full max-w-md">
+                <input
+                  type="text"
+                  placeholder="🔍 Search menu items by name..."
+                  className="w-full px-5 py-3 rounded-xl bg-gradient-to-r from-gray-800 via-gray-900 to-gray-800 border-2 border-yellow-400 text-white font-semibold shadow-xl focus:outline-none focus:ring-4 focus:ring-yellow-400 focus:border-yellow-500 transition-all duration-300 animate-glow"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                <span className="absolute right-4 top-1/2 transform -translate-y-1/2 text-yellow-400 pointer-events-none">
+                  <FaUtensils className="text-2xl drop-shadow-lg" />
+                </span>
+              </div>
+            </div>
+            <style>{`
+              @keyframes glow {
+                0% { box-shadow: 0 0 0px #facc15; }
+                50% { box-shadow: 0 0 12px #facc15; }
+                100% { box-shadow: 0 0 0px #facc15; }
+              }
+              .animate-glow:focus {
+                animation: glow 1.2s infinite;
+              }
+            `}</style>
             {/* Total Items Card */}
             <div className="flex justify-center mb-6">
               <div className="flex items-center gap-4 bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-400 shadow-xl border-4 border-yellow-500 rounded-2xl px-8 py-5 animate-fade-in">
@@ -1149,7 +1175,11 @@ For any queries, contact us at our restaurant.`;
                   </tr>
                 </thead>
                 <tbody>
-                  {menuItems.length === 0 ? (
+                  {menuItems.filter((item) =>
+                    item.itemName
+                      .toLowerCase()
+                      .includes(searchQuery.toLowerCase())
+                  ).length === 0 ? (
                     <tr>
                       <td
                         colSpan="6"
@@ -1162,113 +1192,127 @@ For any queries, contact us at our restaurant.`;
                       </td>
                     </tr>
                   ) : (
-                    menuItems.map((item) => (
-                      <tr
-                        key={item.id}
-                        className="border-b border-gray-700 hover:bg-gray-800"
-                      >
-                        <td className="px-6 py-4">
-                          {item.photoUrl ? (
-                            <img
-                              src={item.photoUrl}
-                              alt={item.itemName}
-                              className="w-16 h-16 object-cover rounded-lg"
-                            />
-                          ) : (
-                            <div className="w-16 h-16 bg-gray-700 rounded-lg flex items-center justify-center">
-                              <FaUtensils className="text-gray-500" />
-                            </div>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 font-semibold">
-                          {item.itemName}
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className="px-3 py-1 rounded-full text-sm font-semibold bg-yellow-400 text-black">
-                            {item.category}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 font-bold text-yellow-400">
-                          ₹{Number(item.price || 0).toFixed(2)}
-                        </td>
-                        <td className="px-6 py-4 text-gray-300 max-w-xs truncate">
-                          {item.description || "No description"}
-                        </td>
-                        <td className="px-6 py-4 text-center space-x-2">
-                          <button
-                            onClick={() => openEditModal(item)}
-                            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg transition-colors"
-                          >
-                            <FaEdit />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteItem(item.id)}
-                            className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg transition-colors"
-                          >
-                            <FaTrash />
-                          </button>
-                        </td>
-                      </tr>
-                    ))
+                    menuItems
+                      .filter((item) =>
+                        item.itemName
+                          .toLowerCase()
+                          .includes(searchQuery.toLowerCase())
+                      )
+                      .map((item) => (
+                        <tr
+                          key={item.id}
+                          className="border-b border-gray-700 hover:bg-gray-800"
+                        >
+                          <td className="px-6 py-4">
+                            {item.photoUrl ? (
+                              <img
+                                src={item.photoUrl}
+                                alt={item.itemName}
+                                className="w-16 h-16 object-cover rounded-lg"
+                              />
+                            ) : (
+                              <div className="w-16 h-16 bg-gray-700 rounded-lg flex items-center justify-center">
+                                <FaUtensils className="text-gray-500" />
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 font-semibold">
+                            {item.itemName}
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="px-3 py-1 rounded-full text-sm font-semibold bg-yellow-400 text-black">
+                              {item.category}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 font-bold text-yellow-400">
+                            ₹{Number(item.price || 0).toFixed(2)}
+                          </td>
+                          <td className="px-6 py-4 text-gray-300 max-w-xs truncate">
+                            {item.description || "No description"}
+                          </td>
+                          <td className="px-6 py-4 text-center space-x-2">
+                            <button
+                              onClick={() => openEditModal(item)}
+                              className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg transition-colors"
+                            >
+                              <FaEdit />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteItem(item.id)}
+                              className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg transition-colors"
+                            >
+                              <FaTrash />
+                            </button>
+                          </td>
+                        </tr>
+                      ))
                   )}
                 </tbody>
               </table>
             </div>
             <div className="md:hidden space-y-3">
-              {menuItems.length === 0 ? (
+              {menuItems.filter((item) =>
+                item.itemName.toLowerCase().includes(searchQuery.toLowerCase())
+              ).length === 0 ? (
                 <div className="bg-gray-900 rounded-lg border border-yellow-500 shadow-lg p-6 text-center text-gray-400">
                   <FaUtensils className="text-4xl mb-2 mx-auto" />
                   <p>No menu items found. Add some items to get started!</p>
                 </div>
               ) : (
-                menuItems.map((item) => (
-                  <div
-                    key={item.id}
-                    className="bg-gray-900 rounded-lg border border-gray-700 p-4 shadow"
-                  >
-                    {item.photoUrl ? (
-                      <img
-                        src={item.photoUrl}
-                        alt={item.itemName}
-                        className="w-full h-40 object-cover rounded-md"
-                      />
-                    ) : (
-                      <div className="w-full h-40 bg-gray-800 rounded-md flex items-center justify-center">
-                        <FaUtensils className="text-gray-500 text-2xl" />
-                      </div>
-                    )}
-                    <div className="mt-3">
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-semibold">
-                          {item.itemName}
-                        </h3>
-                        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-yellow-400 text-black">
-                          {item.category}
-                        </span>
-                      </div>
-                      <div className="mt-1 text-yellow-400 font-bold">
-                        ₹{Number(item.price || 0).toFixed(2)}
-                      </div>
-                      <p className="mt-1 text-gray-300">
-                        {item.description || "No description"}
-                      </p>
-                      <div className="mt-3 flex gap-2">
-                        <button
-                          onClick={() => openEditModal(item)}
-                          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg transition-colors flex items-center justify-center"
-                        >
-                          <FaEdit className="mr-2" /> Edit
-                        </button>
-                        <button
-                          onClick={() => handleDeleteItem(item.id)}
-                          className="flex-1 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg transition-colors flex items-center justify-center"
-                        >
-                          <FaTrash className="mr-2" /> Delete
-                        </button>
+                menuItems
+                  .filter((item) =>
+                    item.itemName
+                      .toLowerCase()
+                      .includes(searchQuery.toLowerCase())
+                  )
+                  .map((item) => (
+                    <div
+                      key={item.id}
+                      className="bg-gray-900 rounded-lg border border-gray-700 p-4 shadow"
+                    >
+                      {item.photoUrl ? (
+                        <img
+                          src={item.photoUrl}
+                          alt={item.itemName}
+                          className="w-full h-40 object-cover rounded-md"
+                        />
+                      ) : (
+                        <div className="w-full h-40 bg-gray-800 rounded-md flex items-center justify-center">
+                          <FaUtensils className="text-gray-500 text-2xl" />
+                        </div>
+                      )}
+                      <div className="mt-3">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-lg font-semibold">
+                            {item.itemName}
+                          </h3>
+                          <span className="px-3 py-1 rounded-full text-xs font-semibold bg-yellow-400 text-black">
+                            {item.category}
+                          </span>
+                        </div>
+                        <div className="mt-1 text-yellow-400 font-bold">
+                          ₹{Number(item.price || 0).toFixed(2)}
+                        </div>
+                        <p className="mt-1 text-gray-300">
+                          {item.description || "No description"}
+                        </p>
+                        <div className="mt-3 flex gap-2">
+                          <button
+                            onClick={() => openEditModal(item)}
+                            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg transition-colors flex items-center justify-center"
+                          >
+                            <FaEdit className="mr-2" /> Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteItem(item.id)}
+                            className="flex-1 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg transition-colors flex items-center justify-center"
+                          >
+                            <FaTrash className="mr-2" /> Delete
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))
+                  ))
               )}
             </div>
           </>
@@ -1695,6 +1739,236 @@ For any queries, contact us at our restaurant.`;
                                               )),
                                         0
                                       );
+                                return (
+                                  <span className="text-yellow-400 font-bold text-xl">
+                                    ₹{finalTotal.toFixed(2)}
+                                  </span>
+                                );
+                              })()}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+            )}
+          </div>
+        )}
+        {activeTab === "history" && (
+          <div className="space-y-4">
+            <div className="flex items-center">
+              <label className="mr-3 text-yellow-400 font-semibold">
+                Filter by date
+              </label>
+              <input
+                type="date"
+                value={historyDate}
+                onChange={(e) => setHistoryDate(e.target.value)}
+                className="bg-gray-800 border border-gray-700 text-white px-3 py-2 rounded"
+              />
+            </div>
+            {orders
+              .filter((o) => (o.status || "pending") !== "pending")
+              .filter((o) => isSameDayAs(o.createdAt, historyDate)).length ===
+            0 ? (
+              <div className="text-center py-8 text-gray-400">
+                <FaList className="text-4xl mb-2 mx-auto" />
+                <p>No order history yet.</p>
+              </div>
+            ) : (
+              orders
+                .filter((o) => (o.status || "pending") !== "pending")
+                .filter((o) => isSameDayAs(o.createdAt, historyDate))
+                .map((order) => {
+                  const status = order.status || "pending";
+                  let badgeClass =
+                    "inline-flex items-center gap-2 px-4 py-1 rounded-full font-semibold shadow text-base border transition";
+                  let badgeIcon = null;
+                  let badgeText = "";
+                  switch (status) {
+                    case "accepted":
+                      badgeClass +=
+                        " bg-gradient-to-r from-green-400 to-green-600 text-white border-green-500";
+                      badgeIcon = <FaCheck className="text-lg" />;
+                      badgeText = "Accepted";
+                      break;
+                    case "rejected":
+                      badgeClass +=
+                        " bg-gradient-to-r from-red-400 to-red-600 text-white border-red-500";
+                      badgeIcon = <FaTimes className="text-lg" />;
+                      badgeText = "Rejected";
+                      break;
+                    default:
+                      badgeClass +=
+                        " bg-gradient-to-r from-yellow-300 to-yellow-500 text-black border-yellow-400";
+                      badgeIcon = <FaList className="text-lg" />;
+                      badgeText =
+                        status.charAt(0).toUpperCase() + status.slice(1);
+                  }
+                  return (
+                    <div
+                      key={order.id}
+                      className="bg-gray-800 p-6 rounded-lg border border-gray-700 hover:border-yellow-500 transition-colors"
+                    >
+                      <div className="flex flex-col md:flex-row justify-between md:items-center gap-3 mb-4">
+                        <div>
+                          <h3 className="text-xl font-bold text-yellow-400">
+                            {order.orderID || `Order #${order.id}`}
+                          </h3>
+                          <p className="text-gray-400 text-sm">
+                            {formatDate(order.createdAt)}
+                          </p>
+                        </div>
+                        <span className={badgeClass} title={badgeText}>
+                          {badgeIcon}
+                          {badgeText}
+                        </span>
+                      </div>
+                      <div className="grid md:grid-cols-2 gap-6">
+                        <div>
+                          <h4 className="font-semibold text-yellow-400 mb-2">
+                            Customer Information
+                          </h4>
+                          <p className="text-white">
+                            <strong>Name:</strong>{" "}
+                            {order.billingName || order.name}
+                          </p>
+                          <p className="text-gray-300 mt-1">
+                            <strong>Mobile:</strong>{" "}
+                            {order.billingMobile || "—"}
+                          </p>
+                          <p className="text-gray-300 mt-2">
+                            <strong>Address:</strong> {order.address}
+                          </p>
+                          {/* User Location Button */}
+                          {order.location?.lat && order.location?.lng && (
+                            <button
+                              className="mt-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded flex items-center"
+                              onClick={() =>
+                                window.open(
+                                  `https://www.google.com/maps?q=${order.location.lat},${order.location.lng}`,
+                                  "_blank"
+                                )
+                              }
+                              title="Open user location in Google Maps"
+                            >
+                              <FaMapMarkerAlt className="mr-2" />
+                              User Location
+                            </button>
+                          )}
+                          {/* Print Button */}
+                          <button
+                            className="bg-yellow-400 hover:bg-yellow-500 text-black px-4 py-2 rounded font-semibold mt-2"
+                            onClick={() => setPrintOrder(order)}
+                          >
+                            Print
+                          </button>
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-yellow-400 mb-2">
+                            Order Items
+                          </h4>
+                          <div className="space-y-2">
+                            {order.items?.map((i, idx) => {
+                              const qty = Number(i.quantity || 0);
+                              const unitPrice =
+                                i.unitPrice != null
+                                  ? Number(i.unitPrice)
+                                  : Number(i.price || 0);
+                              const unitDisc =
+                                i.unitDiscountedPrice != null
+                                  ? Number(i.unitDiscountedPrice)
+                                  : Math.max(
+                                      0,
+                                      unitPrice *
+                                        (1 -
+                                          Number(
+                                            order.appliedDiscountPercent || 0
+                                          ) /
+                                            100)
+                                    );
+                              const baseItem =
+                                i.lineBaseTotal != null
+                                  ? Number(i.lineBaseTotal)
+                                  : unitPrice * qty;
+                              const finalItem =
+                                i.lineDiscountedTotal != null
+                                  ? Number(i.lineDiscountedTotal)
+                                  : unitDisc * qty;
+                              const discounted = finalItem < baseItem - 1e-6;
+                              return (
+                                <div
+                                  key={idx}
+                                  className="flex justify-between items-center bg-gray-700 p-3 rounded"
+                                >
+                                  <div className="flex-1">
+                                    <span className="text-white font-semibold">
+                                      {i.itemName || i.name || "Unnamed item"}
+                                    </span>
+                                    <div className="text-sm text-gray-300">
+                                      <span>
+                                        ₹{unitPrice.toFixed(2)} × {qty}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  {discounted ? (
+                                    <div className="text-right">
+                                      <div className="text-gray-400 line-through">
+                                        ₹{baseItem.toFixed(2)}
+                                      </div>
+                                      <div className="text-yellow-400 font-bold">
+                                        ₹{finalItem.toFixed(2)}
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <span className="text-yellow-400 font-bold">
+                                      ₹{finalItem.toFixed(2)}
+                                    </span>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                          <div className="mt-4 pt-3 border-t border-gray-600">
+                            <div className="flex justify-between items-center">
+                              <span className="text-white font-semibold text-lg">
+                                Total:
+                              </span>
+                              {(() => {
+                                const base =
+                                  order.subtotal != null
+                                    ? Number(order.subtotal)
+                                    : (order.items || []).reduce(
+                                        (total, it) =>
+                                          total +
+                                          (it.lineBaseTotal != null
+                                            ? Number(it.lineBaseTotal)
+                                            : Number(it.price || 0) *
+                                              Number(it.quantity || 0)),
+                                        0
+                                      );
+                                const finalTotal =
+                                  order.discountedTotal != null
+                                    ? Number(order.discountedTotal)
+                                    : (order.items || []).reduce(
+                                        (sum, it) =>
+                                          sum +
+                                          (it.lineDiscountedTotal != null
+                                            ? Number(it.lineDiscountedTotal)
+                                            : Math.max(
+                                                0,
+                                                Number(it.price || 0) *
+                                                  (1 -
+                                                    Number(
+                                                      order.appliedDiscountPercent ||
+                                                        0
+                                                    ) /
+                                                      100) *
+                                                  Number(it.quantity || 0)
+                                              )),
+                                        0
+                                      );
                                 const snapshotPct =
                                   Number(order.appliedDiscountPercent ?? 0) ||
                                   0;
@@ -1757,16 +2031,19 @@ For any queries, contact us at our restaurant.`;
                   <div className="mt-2 bg-gray-800 border border-gray-700 rounded max-h-48 overflow-auto">
                     {cityResults.map((c, idx) => (
                       <button
-                        key={`${c.lat}-${c.lon}-${idx}`}
-                        type="button"
-                        onClick={() => {
+                        key={c.display}
+                        onClick={async () => {
+                          setAdminCity(c.display);
                           setAdminLat(c.lat);
                           setAdminLng(c.lon);
-                          setAdminCity(c.display);
+                          setLocMessage(`Selected: ${c.display}`);
+                          showNotification(`Selected city: ${c.display}`);
+                          await new Promise((resolve) =>
+                            setTimeout(resolve, 100)
+                          );
                           setCityResults([]);
-                          setCityQuery(c.display);
                         }}
-                        className="w-full text-left px-3 py-2 hover:bg-gray-700 text-sm text-white"
+                        className="block w-full text-left px-4 py-2 text-gray-200 hover:bg-gray-700 rounded-lg transition-colors"
                       >
                         {c.display}
                       </button>
@@ -1774,282 +2051,199 @@ For any queries, contact us at our restaurant.`;
                   </div>
                 )}
               </div>
-              <div className="flex items-center gap-3 mb-4">
-                <button
-                  type="button"
-                  onClick={detectAndSetMyCity}
-                  className="bg-gray-700 hover:bg-gray-600 text-white px-3 py-2 rounded"
-                >
-                  {locFetching ? "Fetching..." : "Fetch current location"}
-                </button>
-                <div className="text-sm text-gray-300">
-                  {typeof adminLat === "number" && typeof adminLng === "number"
-                    ? `Lat: ${adminLat.toFixed(5)}, Lng: ${adminLng.toFixed(5)}`
-                    : "(not set)"}
-                </div>
-              </div>
-              {locMessage && (
-                <div className="text-xs text-gray-400 mb-2">{locMessage}</div>
-              )}
-              <div className="max-w-sm">
+              {/* Current Location */}
+              <div className="mb-4">
                 <label className="block text-yellow-400 font-semibold mb-2">
-                  Delivery radius (km)
+                  Current Location
+                </label>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={detectAndSetMyCity}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold flex items-center justify-center"
+                  >
+                    {locFetching ? (
+                      <span className="animate-spin">
+                        <svg
+                          className="w-5 h-5 mr-2 text-white"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          strokeWidth={2}
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M12 4v16m8-8H4"
+                          />
+                        </svg>
+                        Detecting...
+                      </span>
+                    ) : (
+                      <FaMapPin className="mr-2" />
+                    )}
+                    Detect My Location
+                  </button>
+                  <button
+                    onClick={saveAdminCity}
+                    className="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-semibold flex items-center justify-center"
+                  >
+                    <FaSave className="mr-2" />
+                    Save Location
+                  </button>
+                </div>
+                {locMessage && (
+                  <p
+                    className={`mt-2 text-sm ${
+                      locFetching
+                        ? "text-blue-400"
+                        : locMessage.startsWith("Detected")
+                        ? "text-green-400"
+                        : "text-red-400"
+                    }`}
+                  >
+                    {locMessage}
+                  </p>
+                )}
+              </div>
+              {/* Delivery Radius */}
+              <div>
+                <label className="block text-yellow-400 font-semibold mb-2">
+                  Delivery Radius (km)
                 </label>
                 <input
                   type="number"
-                  min="1"
-                  step="0.5"
+                  min="0"
                   value={deliveryRadiusKm}
                   onChange={(e) => setDeliveryRadiusKm(e.target.value)}
-                  placeholder="10"
-                  className="w-full bg-gray-800 border border-gray-700 text-white px-3 py-2 rounded"
+                  className="w-full bg-gray-800 border border-gray-700 text-white px-4 py-2 rounded-lg focus:outline-none"
                 />
-              </div>
-              <div className="mt-4">
-                <button
-                  type="button"
-                  onClick={saveAdminCity}
-                  className="bg-yellow-400 hover:bg-yellow-500 text-black px-4 py-2 rounded font-semibold"
-                >
-                  Save
-                </button>
               </div>
             </div>
           </div>
         )}
         {activeTab === "discount" && (
-          <div className="space-y-4">
-            <div className="bg-gray-900 rounded-lg p-6 border border-yellow-500 shadow-lg max-w-md">
-              <h3 className="text-xl font-bold text-yellow-400 mb-2">
-                Global Discount
-              </h3>
-              <p className="text-gray-300 mb-4">
-                Set a percentage discount applied to all items for users.
-              </p>
-              <label className="block text-yellow-400 font-semibold mb-2">
-                Discount (%)
-              </label>
-              <input
-                type="number"
-                min="0"
-                max="100"
-                step="1"
-                value={discountPercent}
-                onChange={(e) => setDiscountPercent(e.target.value)}
-                className="w-full bg-gray-800 border border-gray-700 text-white px-3 py-2 rounded"
-              />
-              <div className="mt-4 flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={saveDiscount}
-                  className="bg-yellow-400 hover:bg-yellow-500 text-black px-4 py-2 rounded font-semibold"
-                >
-                  Save
-                </button>
-                <span className="text-sm text-gray-400">
-                  Current: {Number(discountPercent) || 0}%
-                </span>
+          <div className="max-w-md mx-auto">
+            <div className="bg-gray-900 rounded-lg p-6 border border-yellow-500 shadow-lg">
+              <h2 className="text-2xl font-bold text-yellow-400 mb-4 text-center">
+                Set Discount
+              </h2>
+              <div className="mb-4">
+                <label className="block text-yellow-400 font-semibold mb-2">
+                  Discount Percentage
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={discountPercent}
+                  onChange={(e) => setDiscountPercent(e.target.value)}
+                  className="w-full bg-gray-800 border border-gray-700 text-white px-4 py-2 rounded-lg focus:outline-none"
+                />
               </div>
+              <button
+                onClick={saveDiscount}
+                className="w-full bg-gradient-to-br from-yellow-400 to-yellow-300 text-black py-3 rounded-lg font-bold flex items-center justify-center transition-all duration-200 hover:shadow-lg"
+              >
+                <FaSave className="mr-2" />
+                Save Discount
+              </button>
             </div>
           </div>
         )}
         {activeTab === "enquiry" && (
           <div className="space-y-4">
-            <div className="bg-gray-900 rounded-lg border border-yellow-500 shadow-lg">
-              <div className="p-6">
-                <h2 className="text-2xl font-bold text-yellow-400 mb-6 flex items-center">
-                  <FaEnvelope className="mr-3" />
-                  Customer Inquiries ({inquiries.length})
-                </h2>
-
-                {/* Date Picker */}
-                <div className="flex items-center mb-4">
-                  <label className="mr-3 text-yellow-400 font-semibold">
-                    Filter by date
-                  </label>
-                  <input
-                    type="date"
-                    value={inquiryDate}
-                    onChange={(e) => setInquiryDate(e.target.value)}
-                    className="bg-gray-800 border border-gray-700 text-white px-3 py-2 rounded"
-                  />
+            <div className="bg-gray-900 rounded-lg p-6 border border-yellow-500 shadow-lg">
+              <h3 className="text-xl font-bold text-yellow-400 mb-4">
+                Inquiries
+              </h3>
+              {inquiries.length === 0 ? (
+                <div className="text-center py-8 text-gray-400">
+                  <FaEnvelopeOpen className="text-4xl mb-2 mx-auto" />
+                  <p>No inquiries received yet.</p>
                 </div>
-
-                {inquiries.filter((inquiry) =>
-                  isSameDayAs(inquiry.createdAt, inquiryDate)
-                ).length === 0 ? (
-                  <div className="text-center py-8 text-gray-400">
-                    <FaEnvelope className="text-4xl mb-2 mx-auto" />
-                    <p>No inquiries found for this date.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {inquiries
-                      .filter((inquiry) =>
-                        isSameDayAs(inquiry.createdAt, inquiryDate)
-                      )
-                      .map((inquiry) => (
-                        <div
-                          key={inquiry.id}
-                          className="bg-gray-800 p-6 rounded-lg border border-gray-700 hover:border-yellow-500 transition-colors"
+              ) : (
+                inquiries.map((inquiry) => (
+                  <div
+                    key={inquiry.id}
+                    className="p-4 mb-4 bg-gray-800 rounded-lg border border-gray-700"
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <h4 className="text-lg font-semibold text-yellow-400">
+                          Inquiry from {inquiry.name}
+                        </h4>
+                        <p className="text-gray-300 text-sm">
+                          {formatDate(inquiry.createdAt)}
+                        </p>
+                      </div>
+                      <div className="mt-2 sm:mt-0">
+                        <button
+                          onClick={() => handleDeleteInquiry(inquiry.id)}
+                          className="text-red-400 hover:text-red-600 transition-colors"
+                          title="Delete Inquiry"
                         >
-                          <div className="flex justify-between items-start mb-4">
-                            <div className="flex items-center space-x-3">
-                              {inquiry.type === "wedding" ? (
-                                <FaHeart className="text-pink-400 text-xl" />
-                              ) : (
-                                <FaEnvelope className="text-blue-400 text-xl" />
-                              )}
-                              <div>
-                                <h3 className="text-xl font-bold text-yellow-400">
-                                  {inquiry.type === "wedding"
-                                    ? "Wedding Inquiry"
-                                    : "Contact Inquiry"}
-                                </h3>
-                                <p className="text-gray-400 text-sm">
-                                  {formatDate(inquiry.createdAt)}
-                                </p>
-                              </div>
-                            </div>
-                            <span
-                              className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                                inquiry.status === "new"
-                                  ? "bg-yellow-400 text-black"
-                                  : inquiry.status === "contacted"
-                                  ? "bg-green-600 text-white"
-                                  : "bg-gray-600 text-white"
-                              }`}
-                            >
-                              {inquiry.status?.charAt(0).toUpperCase() +
-                                inquiry.status?.slice(1) || "New"}
-                            </span>
-                          </div>
-
-                          <div className="grid md:grid-cols-2 gap-6">
-                            <div>
-                              <h4 className="font-semibold text-yellow-400 mb-3 flex items-center">
-                                <FaUserShield className="mr-2" />
-                                Contact Information
-                              </h4>
-
-                              {inquiry.type === "wedding" ? (
-                                <div className="space-y-2">
-                                  <p className="text-white">
-                                    <strong>Bride:</strong>{" "}
-                                    {inquiry.brideName || "—"}
-                                  </p>
-                                  <p className="text-white">
-                                    <strong>Groom:</strong>{" "}
-                                    {inquiry.groomName || "—"}
-                                  </p>
-                                  <p className="text-gray-300">
-                                    <MdPhone className="inline mr-1" />
-                                    <strong>Phone:</strong>{" "}
-                                    {inquiry.contactNumber || "—"}
-                                  </p>
-                                  <p className="text-gray-300">
-                                    <FaEnvelope className="inline mr-1" />
-                                    <strong>Email:</strong>{" "}
-                                    {inquiry.email || "—"}
-                                  </p>
-                                </div>
-                              ) : (
-                                <div className="space-y-2">
-                                  <p className="text-white">
-                                    <strong>Name:</strong> {inquiry.name || "—"}
-                                  </p>
-                                  <p className="text-gray-300">
-                                    <FaEnvelope className="inline mr-1" />
-                                    <strong>Email:</strong>{" "}
-                                    {inquiry.email || "—"}
-                                  </p>
-                                  <p className="text-gray-300">
-                                    <strong>Subject:</strong>{" "}
-                                    {inquiry.subject || "—"}
-                                  </p>
-                                </div>
-                              )}
-                            </div>
-
-                            <div>
-                              <h4 className="font-semibold text-yellow-400 mb-3 flex items-center">
-                                {inquiry.type === "wedding" ? (
-                                  <>
-                                    <FaCalendarAlt className="mr-2" />
-                                    Wedding Details
-                                  </>
-                                ) : (
-                                  <>
-                                    <FaEnvelope className="mr-2" />
-                                    Message
-                                  </>
-                                )}
-                              </h4>
-
-                              {inquiry.type === "wedding" ? (
-                                <div className="space-y-2">
-                                  <p className="text-white">
-                                    <FaCalendarAlt className="inline mr-1" />
-                                    <strong>Date:</strong>{" "}
-                                    {inquiry.weddingDate || "—"}
-                                  </p>
-                                  <p className="text-white">
-                                    <FaUsers className="inline mr-1" />
-                                    <strong>Guests:</strong>{" "}
-                                    {inquiry.numberOfGuests || "—"}
-                                  </p>
-                                  <p className="text-gray-300">
-                                    <FaMapPin className="inline mr-1" />
-                                    <strong>Venue:</strong>{" "}
-                                    {inquiry.venueDetails || "—"}
-                                  </p>
-                                </div>
-                              ) : (
-                                <div className="text-gray-300">
-                                  <p className="whitespace-pre-wrap">
-                                    {inquiry.message || "—"}
-                                  </p>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-
-                          <div className="mt-4 pt-4 border-t border-gray-600">
-                            <div className="flex flex-col sm:flex-row gap-2">
-                              <button
-                                onClick={() => {
-                                  if (inquiry.contactNumber) {
-                                    const phoneNumber =
-                                      inquiry.contactNumber.replace(/\D/g, "");
-                                    const whatsappUrl = `https://wa.me/91${phoneNumber}`;
-                                    window.open(whatsappUrl, "_blank");
-                                  }
-                                }}
-                                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-semibold flex items-center w-full sm:w-auto"
-                                disabled={!inquiry.contactNumber}
-                              >
-                                <MdPhone className="mr-2" /> {/* <-- FIXED */}
-                                WhatsApp
-                              </button>
-                              <button
-                                onClick={() => {
-                                  if (inquiry.email) {
-                                    window.location.href = `mailto:${inquiry.email}`;
-                                  }
-                                }}
-                                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold flex items-center w-full sm:w-auto"
-                                disabled={!inquiry.email}
-                              >
-                                <FaEnvelope className="mr-2" />
-                                Email
-                              </button>
-                            </div>
-                          </div>
+                          <FaTrash />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="mt-3">
+                      {inquiry.venueDetails ? (
+                        <div className="text-gray-300">
+                          <p className="whitespace-pre-wrap">
+                            {inquiry.message || "—"}
+                          </p>
+                          <p className="text-gray-300">
+                            <FaMapPin className="inline mr-1" />
+                            <strong>Venue:</strong>{" "}
+                            {inquiry.venueDetails || "—"}
+                          </p>
                         </div>
-                      ))}
+                      ) : (
+                        <div className="text-gray-300">
+                          <p className="whitespace-pre-wrap">
+                            {inquiry.message || "—"}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="mt-4 pt-4 border-t border-gray-600">
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <button
+                          onClick={() => {
+                            if (inquiry.contactNumber) {
+                              const phoneNumber = inquiry.contactNumber.replace(
+                                /\D/g,
+                                ""
+                              );
+                              const whatsappUrl = `https://wa.me/91${phoneNumber}`;
+                              window.open(whatsappUrl, "_blank");
+                            }
+                          }}
+                          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-semibold flex items-center w-full sm:w-auto"
+                          disabled={!inquiry.contactNumber}
+                        >
+                          <MdPhone className="mr-2" /> {/* <-- FIXED */}
+                          WhatsApp
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (inquiry.email) {
+                              window.location.href = `mailto:${inquiry.email}`;
+                            }
+                          }}
+                          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold flex items-center w-full sm:w-auto"
+                          disabled={!inquiry.email}
+                        >
+                          <FaEnvelope className="mr-2" />
+                          Email
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                )}
-              </div>
+                ))
+              )}
             </div>
           </div>
         )}
