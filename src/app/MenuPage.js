@@ -11,13 +11,14 @@ export default function MenuPage() {
   const [menuItems, setMenuItems] = useState([]);
   const [categories, setCategories] = useState([]);
   const [filter, setFilter] = useState("all");
-  const [searchQuery, setSearchQuery] = useState(""); // New state for search
+  const [searchQuery, setSearchQuery] = useState(""); // Search state
   const [isOpen, setIsOpen] = useState(null);
   const [discountPercent, setDiscountPercent] = useState(0);
   const { addToCart, cart, updateQuantity } = useCart();
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(9);
 
+  // Handle responsive items per page
   useEffect(() => {
     function handleResize() {
       if (window.innerWidth < 640) {
@@ -38,6 +39,7 @@ export default function MenuPage() {
     all: GiKnifeFork,
   };
 
+  // Fetch shop status and menu items
   useEffect(() => {
     const fetchShopStatusAndMenu = async () => {
       try {
@@ -89,6 +91,7 @@ export default function MenuPage() {
     fetchShopStatusAndMenu();
   }, []);
 
+  // Filter items based on category and search query
   const filteredItems = menuItems.filter((item) => {
     const matchesCategory =
       filter === "all" || item.category.toLowerCase() === filter.toLowerCase();

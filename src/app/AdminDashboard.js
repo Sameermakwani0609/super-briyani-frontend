@@ -25,6 +25,7 @@ import {
   FaCalendarAlt,
   FaUsers,
   FaMapPin,
+  FaEnvelopeOpen,
 } from "react-icons/fa";
 import { MdPhone } from "react-icons/md";
 import { db } from "../../lib/firebase";
