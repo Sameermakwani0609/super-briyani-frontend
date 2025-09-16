@@ -843,7 +843,7 @@ For any queries, contact us at our restaurant.`;
               <FaUtensils className="text-3xl p-2 bg-black/10 rounded-xl shadow-sm" />
               <div className="leading-tight">
                 <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">
-                  Asif Bhai's Biryani Admin
+                   Asif Bhai&apos;s Biryani Admin
                 </h1>
                 <p className="text-xs md:text-sm font-semibold opacity-70 -mt-0.5">
                   Dashboard
