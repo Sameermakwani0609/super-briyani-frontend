@@ -106,7 +106,8 @@ export default function AdminDashboard() {
     onConfirm: null,
   });
   const [confirmLoading, setConfirmLoading] = useState(false);
-  const [searchQuery, setSearchQuery] = useState(""); // <-- Add this state
+  const [searchQuery, setSearchQuery] = useState(""); // <-- Already present
+  const [viewItemsPage, setViewItemsPage] = useState(1); // <-- NEW: pagination page
 
   const formatDate = (ts) => {
     if (!ts) return "";
@@ -773,7 +774,17 @@ For any queries, contact us at our restaurant.`;
   };
 
   const [printOrder, setPrintOrder] = useState(null);
-  // ...existing code...
+  // Helper for paginated items
+  const filteredMenuItems = menuItems.filter((item) =>
+    item.itemName.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+  const itemsPerPage = 10;
+  const paginatedMenuItems = filteredMenuItems.slice(
+    0,
+    viewItemsPage * itemsPerPage
+  );
+  const hasMoreItems = paginatedMenuItems.length < filteredMenuItems.length;
+
   return (
     <div className="min-h-screen h-screen w-full bg-gradient-to-br from-black to-gray-900 text-white overflow-auto">
       {/* Print Layout Modal */}
@@ -832,7 +843,7 @@ For any queries, contact us at our restaurant.`;
               <FaUtensils className="text-3xl p-2 bg-black/10 rounded-xl shadow-sm" />
               <div className="leading-tight">
                 <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">
-                  Super Briyani Admin
+                  Asif Bhai's Biryani Admin
                 </h1>
                 <p className="text-xs md:text-sm font-semibold opacity-70 -mt-0.5">
                   Dashboard
@@ -1176,11 +1187,7 @@ For any queries, contact us at our restaurant.`;
                   </tr>
                 </thead>
                 <tbody>
-                  {menuItems.filter((item) =>
-                    item.itemName
-                      .toLowerCase()
-                      .includes(searchQuery.toLowerCase())
-                  ).length === 0 ? (
+                  {paginatedMenuItems.length === 0 ? (
                     <tr>
                       <td
                         colSpan="6"
@@ -1193,127 +1200,133 @@ For any queries, contact us at our restaurant.`;
                       </td>
                     </tr>
                   ) : (
-                    menuItems
-                      .filter((item) =>
-                        item.itemName
-                          .toLowerCase()
-                          .includes(searchQuery.toLowerCase())
-                      )
-                      .map((item) => (
-                        <tr
-                          key={item.id}
-                          className="border-b border-gray-700 hover:bg-gray-800"
-                        >
-                          <td className="px-6 py-4">
-                            {item.photoUrl ? (
-                              <img
-                                src={item.photoUrl}
-                                alt={item.itemName}
-                                className="w-16 h-16 object-cover rounded-lg"
-                              />
-                            ) : (
-                              <div className="w-16 h-16 bg-gray-700 rounded-lg flex items-center justify-center">
-                                <FaUtensils className="text-gray-500" />
-                              </div>
-                            )}
-                          </td>
-                          <td className="px-6 py-4 font-semibold">
-                            {item.itemName}
-                          </td>
-                          <td className="px-6 py-4">
-                            <span className="px-3 py-1 rounded-full text-sm font-semibold bg-yellow-400 text-black">
-                              {item.category}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 font-bold text-yellow-400">
-                            ₹{Number(item.price || 0).toFixed(2)}
-                          </td>
-                          <td className="px-6 py-4 text-gray-300 max-w-xs truncate">
-                            {item.description || "No description"}
-                          </td>
-                          <td className="px-6 py-4 text-center space-x-2">
-                            <button
-                              onClick={() => openEditModal(item)}
-                              className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg transition-colors"
-                            >
-                              <FaEdit />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteItem(item.id)}
-                              className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg transition-colors"
-                            >
-                              <FaTrash />
-                            </button>
-                          </td>
-                        </tr>
-                      ))
+                    paginatedMenuItems.map((item) => (
+                      <tr
+                        key={item.id}
+                        className="border-b border-gray-700 hover:bg-gray-800"
+                      >
+                        <td className="px-6 py-4">
+                          {item.photoUrl ? (
+                            <img
+                              src={item.photoUrl}
+                              alt={item.itemName}
+                              className="w-16 h-16 object-cover rounded-lg"
+                            />
+                          ) : (
+                            <div className="w-16 h-16 bg-gray-700 rounded-lg flex items-center justify-center">
+                              <FaUtensils className="text-gray-500" />
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 font-semibold">
+                          {item.itemName}
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="px-3 py-1 rounded-full text-sm font-semibold bg-yellow-400 text-black">
+                            {item.category}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 font-bold text-yellow-400">
+                          ₹{Number(item.price || 0).toFixed(2)}
+                        </td>
+                        <td className="px-6 py-4 text-gray-300 max-w-xs truncate">
+                          {item.description || "No description"}
+                        </td>
+                        <td className="px-6 py-4 text-center space-x-2">
+                          <button
+                            onClick={() => openEditModal(item)}
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg transition-colors"
+                          >
+                            <FaEdit />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteItem(item.id)}
+                            className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg transition-colors"
+                          >
+                            <FaTrash />
+                          </button>
+                        </td>
+                      </tr>
+                    ))
                   )}
                 </tbody>
               </table>
+              {hasMoreItems && (
+                <div className="flex justify-center py-4">
+                  <button
+                    onClick={() => setViewItemsPage((p) => p + 1)}
+                    className="bg-yellow-400 hover:bg-yellow-500 text-black px-6 py-2 rounded-lg font-bold shadow transition"
+                  >
+                    Load More
+                  </button>
+                </div>
+              )}
             </div>
             <div className="md:hidden space-y-3">
-              {menuItems.filter((item) =>
-                item.itemName.toLowerCase().includes(searchQuery.toLowerCase())
-              ).length === 0 ? (
+              {paginatedMenuItems.length === 0 ? (
                 <div className="bg-gray-900 rounded-lg border border-yellow-500 shadow-lg p-6 text-center text-gray-400">
                   <FaUtensils className="text-4xl mb-2 mx-auto" />
                   <p>No menu items found. Add some items to get started!</p>
                 </div>
               ) : (
-                menuItems
-                  .filter((item) =>
-                    item.itemName
-                      .toLowerCase()
-                      .includes(searchQuery.toLowerCase())
-                  )
-                  .map((item) => (
-                    <div
-                      key={item.id}
-                      className="bg-gray-900 rounded-lg border border-gray-700 p-4 shadow"
-                    >
-                      {item.photoUrl ? (
-                        <img
-                          src={item.photoUrl}
-                          alt={item.itemName}
-                          className="w-full h-40 object-cover rounded-md"
-                        />
-                      ) : (
-                        <div className="w-full h-40 bg-gray-800 rounded-md flex items-center justify-center">
-                          <FaUtensils className="text-gray-500 text-2xl" />
-                        </div>
-                      )}
-                      <div className="mt-3">
-                        <div className="flex items-center justify-between">
-                          <h3 className="text-lg font-semibold">
-                            {item.itemName}
-                          </h3>
-                          <span className="px-3 py-1 rounded-full text-xs font-semibold bg-yellow-400 text-black">
-                            {item.category}
-                          </span>
-                        </div>
-                        <div className="mt-1 text-yellow-400 font-bold">
-                          ₹{Number(item.price || 0).toFixed(2)}
-                        </div>
-                        <p className="mt-1 text-gray-300">
-                          {item.description || "No description"}
-                        </p>
-                        <div className="mt-3 flex gap-2">
-                          <button
-                            onClick={() => openEditModal(item)}
-                            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg transition-colors flex items-center justify-center"
-                          >
-                            <FaEdit className="mr-2" /> Edit
-                          </button>
-                          <button
-                            onClick={() => handleDeleteItem(item.id)}
-                            className="flex-1 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg transition-colors flex items-center justify-center"
-                          >
-                            <FaTrash className="mr-2" /> Delete
-                          </button>
-                        </div>
+                paginatedMenuItems.map((item) => (
+                  <div
+                    key={item.id}
+                    className="bg-gray-900 rounded-lg border border-gray-700 p-4 shadow"
+                  >
+                    {item.photoUrl ? (
+                      <img
+                        src={item.photoUrl}
+                        alt={item.itemName}
+                        className="w-full h-40 object-cover rounded-md"
+                      />
+                    ) : (
+                      <div className="w-full h-40 bg-gray-800 rounded-md flex items-center justify-center">
+                        <FaUtensils className="text-gray-500 text-2xl" />
+                      </div>
+                    )}
+                    <div className="mt-3">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-semibold">
+                          {item.itemName}
+                        </h3>
+                        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-yellow-400 text-black">
+                          {item.category}
+                        </span>
+                      </div>
+                      <div className="mt-1 text-yellow-400 font-bold">
+                        ₹{Number(item.price || 0).toFixed(2)}
+                      </div>
+                      <p className="mt-1 text-gray-300">
+                        {item.description || "No description"}
+                      </p>
+                      <div className="mt-3 flex gap-2">
+                        <button
+                          onClick={() => openEditModal(item)}
+                          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg transition-colors flex items-center justify-center"
+                        >
+                          <FaEdit className="mr-2" /> Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteItem(item.id)}
+                          className="flex-1 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg transition-colors flex items-center justify-center"
+                        >
+                          <FaTrash className="mr-2" /> Delete
+                        </button>
                       </div>
                     </div>
-                  ))
+                  </div>
+                ))
+              )}
+              {hasMoreItems && (
+                <div className="flex justify-center py-4">
+                  <button
+                    onClick={() => setViewItemsPage((p) => p + 1)}
+                    className="bg-yellow-400 hover:bg-yellow-500 text-black px-6 py-2 rounded-lg font-bold shadow transition"
+                  >
+                    Load More
+                  </button>
+                </div>
               )}
             </div>
           </>
@@ -1628,13 +1641,18 @@ For any queries, contact us at our restaurant.`;
                               User Location
                             </button>
                           )}
-                          {/* Print Button */}
-                          <button
-                            className="bg-yellow-400 hover:bg-yellow-500 text-black px-4 py-2 rounded font-semibold mt-2"
-                            onClick={() => setPrintOrder(order)}
+                          {/* Print Button below User Location */}
+                          <PrintButton
+                            order={order}
+                            printAreaId={`print-area-history-${order.id}`}
+                          />
+                          {/* Hidden print area for PrintButton */}
+                          <div
+                            id={`print-area-history-${order.id}`}
+                            style={{ display: "none" }}
                           >
-                            Print
-                          </button>
+                            <Receipt order={order} />
+                          </div>
                         </div>
                         <div>
                           <h4 className="font-semibold text-yellow-400 mb-2">
@@ -1741,254 +1759,6 @@ For any queries, contact us at our restaurant.`;
                                         0
                                       );
                                 return (
-                                  <span className="text-yellow-400 font-bold text-xl">
-                                    ₹{finalTotal.toFixed(2)}
-                                  </span>
-                                );
-                              })()}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })
-            )}
-          </div>
-        )}
-        {activeTab === "history" && (
-          <div className="space-y-4">
-            <div className="flex items-center">
-              <label className="mr-3 text-yellow-400 font-semibold">
-                Filter by date
-              </label>
-              <input
-                type="date"
-                value={historyDate}
-                onChange={(e) => setHistoryDate(e.target.value)}
-                className="bg-gray-800 border border-gray-700 text-white px-3 py-2 rounded"
-              />
-            </div>
-            {orders
-              .filter((o) => (o.status || "pending") !== "pending")
-              .filter((o) => isSameDayAs(o.createdAt, historyDate)).length ===
-            0 ? (
-              <div className="text-center py-8 text-gray-400">
-                <FaList className="text-4xl mb-2 mx-auto" />
-                <p>No order history yet.</p>
-              </div>
-            ) : (
-              orders
-                .filter((o) => (o.status || "pending") !== "pending")
-                .filter((o) => isSameDayAs(o.createdAt, historyDate))
-                .map((order) => {
-                  const status = order.status || "pending";
-                  let badgeClass =
-                    "inline-flex items-center gap-2 px-4 py-1 rounded-full font-semibold shadow text-base border transition";
-                  let badgeIcon = null;
-                  let badgeText = "";
-                  switch (status) {
-                    case "accepted":
-                      badgeClass +=
-                        " bg-gradient-to-r from-green-400 to-green-600 text-white border-green-500";
-                      badgeIcon = <FaCheck className="text-lg" />;
-                      badgeText = "Accepted";
-                      break;
-                    case "rejected":
-                      badgeClass +=
-                        " bg-gradient-to-r from-red-400 to-red-600 text-white border-red-500";
-                      badgeIcon = <FaTimes className="text-lg" />;
-                      badgeText = "Rejected";
-                      break;
-                    default:
-                      badgeClass +=
-                        " bg-gradient-to-r from-yellow-300 to-yellow-500 text-black border-yellow-400";
-                      badgeIcon = <FaList className="text-lg" />;
-                      badgeText =
-                        status.charAt(0).toUpperCase() + status.slice(1);
-                  }
-                  return (
-                    <div
-                      key={order.id}
-                      className="bg-gray-800 p-6 rounded-lg border border-gray-700 hover:border-yellow-500 transition-colors"
-                    >
-                      <div className="flex flex-col md:flex-row justify-between md:items-center gap-3 mb-4">
-                        <div>
-                          <h3 className="text-xl font-bold text-yellow-400">
-                            {order.orderID || `Order #${order.id}`}
-                          </h3>
-                          <p className="text-gray-400 text-sm">
-                            {formatDate(order.createdAt)}
-                          </p>
-                        </div>
-                        <span className={badgeClass} title={badgeText}>
-                          {badgeIcon}
-                          {badgeText}
-                        </span>
-                      </div>
-                      <div className="grid md:grid-cols-2 gap-6">
-                        <div>
-                          <h4 className="font-semibold text-yellow-400 mb-2">
-                            Customer Information
-                          </h4>
-                          <p className="text-white">
-                            <strong>Name:</strong>{" "}
-                            {order.billingName || order.name}
-                          </p>
-                          <p className="text-gray-300 mt-1">
-                            <strong>Mobile:</strong>{" "}
-                            {order.billingMobile || "—"}
-                          </p>
-                          <p className="text-gray-300 mt-2">
-                            <strong>Address:</strong> {order.address}
-                          </p>
-                          {/* User Location Button */}
-                          {order.location?.lat && order.location?.lng && (
-                            <button
-                              className="mt-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded flex items-center"
-                              onClick={() =>
-                                window.open(
-                                  `https://www.google.com/maps?q=${order.location.lat},${order.location.lng}`,
-                                  "_blank"
-                                )
-                              }
-                              title="Open user location in Google Maps"
-                            >
-                              <FaMapMarkerAlt className="mr-2" />
-                              User Location
-                            </button>
-                          )}
-                          {/* Print Button */}
-                          <button
-                            className="bg-yellow-400 hover:bg-yellow-500 text-black px-4 py-2 rounded font-semibold mt-2"
-                            onClick={() => setPrintOrder(order)}
-                          >
-                            Print
-                          </button>
-                        </div>
-                        <div>
-                          <h4 className="font-semibold text-yellow-400 mb-2">
-                            Order Items
-                          </h4>
-                          <div className="space-y-2">
-                            {order.items?.map((i, idx) => {
-                              const qty = Number(i.quantity || 0);
-                              const unitPrice =
-                                i.unitPrice != null
-                                  ? Number(i.unitPrice)
-                                  : Number(i.price || 0);
-                              const unitDisc =
-                                i.unitDiscountedPrice != null
-                                  ? Number(i.unitDiscountedPrice)
-                                  : Math.max(
-                                      0,
-                                      unitPrice *
-                                        (1 -
-                                          Number(
-                                            order.appliedDiscountPercent || 0
-                                          ) /
-                                            100)
-                                    );
-                              const baseItem =
-                                i.lineBaseTotal != null
-                                  ? Number(i.lineBaseTotal)
-                                  : unitPrice * qty;
-                              const finalItem =
-                                i.lineDiscountedTotal != null
-                                  ? Number(i.lineDiscountedTotal)
-                                  : unitDisc * qty;
-                              const discounted = finalItem < baseItem - 1e-6;
-                              return (
-                                <div
-                                  key={idx}
-                                  className="flex justify-between items-center bg-gray-700 p-3 rounded"
-                                >
-                                  <div className="flex-1">
-                                    <span className="text-white font-semibold">
-                                      {i.itemName || i.name || "Unnamed item"}
-                                    </span>
-                                    <div className="text-sm text-gray-300">
-                                      <span>
-                                        ₹{unitPrice.toFixed(2)} × {qty}
-                                      </span>
-                                    </div>
-                                  </div>
-                                  {discounted ? (
-                                    <div className="text-right">
-                                      <div className="text-gray-400 line-through">
-                                        ₹{baseItem.toFixed(2)}
-                                      </div>
-                                      <div className="text-yellow-400 font-bold">
-                                        ₹{finalItem.toFixed(2)}
-                                      </div>
-                                    </div>
-                                  ) : (
-                                    <span className="text-yellow-400 font-bold">
-                                      ₹{finalItem.toFixed(2)}
-                                    </span>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
-                          <div className="mt-4 pt-3 border-t border-gray-600">
-                            <div className="flex justify-between items-center">
-                              <span className="text-white font-semibold text-lg">
-                                Total:
-                              </span>
-                              {(() => {
-                                const base =
-                                  order.subtotal != null
-                                    ? Number(order.subtotal)
-                                    : (order.items || []).reduce(
-                                        (total, it) =>
-                                          total +
-                                          (it.lineBaseTotal != null
-                                            ? Number(it.lineBaseTotal)
-                                            : Number(it.price || 0) *
-                                              Number(it.quantity || 0)),
-                                        0
-                                      );
-                                const finalTotal =
-                                  order.discountedTotal != null
-                                    ? Number(order.discountedTotal)
-                                    : (order.items || []).reduce(
-                                        (sum, it) =>
-                                          sum +
-                                          (it.lineDiscountedTotal != null
-                                            ? Number(it.lineDiscountedTotal)
-                                            : Math.max(
-                                                0,
-                                                Number(it.price || 0) *
-                                                  (1 -
-                                                    Number(
-                                                      order.appliedDiscountPercent ||
-                                                        0
-                                                    ) /
-                                                      100) *
-                                                  Number(it.quantity || 0)
-                                              )),
-                                        0
-                                      );
-                                const snapshotPct =
-                                  Number(order.appliedDiscountPercent ?? 0) ||
-                                  0;
-                                const discounted = finalTotal < base - 1e-6;
-                                return discounted ? (
-                                  <div className="text-right">
-                                    <div className="text-gray-400 line-through">
-                                      ₹{base.toFixed(2)}
-                                    </div>
-                                    <div className="text-yellow-400 font-bold text-xl">
-                                      ₹{finalTotal.toFixed(2)}{" "}
-                                      {snapshotPct > 0 && (
-                                        <span className="text-xs text-green-400">
-                                          ({snapshotPct}% off)
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-                                ) : (
                                   <span className="text-yellow-400 font-bold text-xl">
                                     ₹{finalTotal.toFixed(2)}
                                   </span>
@@ -2158,93 +1928,153 @@ For any queries, contact us at our restaurant.`;
               <h3 className="text-xl font-bold text-yellow-400 mb-4">
                 Inquiries
               </h3>
-              {inquiries.length === 0 ? (
-                <div className="text-center py-8 text-gray-400">
-                  <FaEnvelopeOpen className="text-4xl mb-2 mx-auto" />
-                  <p>No inquiries received yet.</p>
-                </div>
-              ) : (
-                inquiries.map((inquiry) => (
-                  <div
-                    key={inquiry.id}
-                    className="p-4 mb-4 bg-gray-800 rounded-lg border border-gray-700"
-                  >
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                      <div>
-                        <h4 className="text-lg font-semibold text-yellow-400">
-                          Inquiry from {inquiry.name}
-                        </h4>
-                        <p className="text-gray-300 text-sm">
-                          {formatDate(inquiry.createdAt)}
-                        </p>
-                      </div>
-                      <div className="mt-2 sm:mt-0">
-                        <button
-                          onClick={() => handleDeleteInquiry(inquiry.id)}
-                          className="text-red-400 hover:text-red-600 transition-colors"
-                          title="Delete Inquiry"
+              <div className="flex items-center mb-4">
+                <label className="mr-3 text-yellow-400 font-semibold">
+                  Filter by date
+                </label>
+                <input
+                  type="date"
+                  value={inquiryDate}
+                  onChange={(e) => setInquiryDate(e.target.value)}
+                  className="bg-gray-800 border border-gray-700 text-white px-3 py-2 rounded"
+                />
+              </div>
+              <div className="overflow-x-auto">
+                <table className="min-w-full bg-gray-900 rounded-lg border border-yellow-500 shadow-lg">
+                  <thead>
+                    <tr className="bg-yellow-400 text-black">
+                      <th className="px-4 py-2 text-left font-bold">Type</th>
+                      <th className="px-4 py-2 text-left font-bold">Name</th>
+                      <th className="px-4 py-2 text-left font-bold">Email</th>
+                      <th className="px-4 py-2 text-left font-bold">Contact</th>
+                      <th className="px-4 py-2 text-left font-bold">Details</th>
+                      <th className="px-4 py-2 text-left font-bold">Date</th>
+                      <th className="px-4 py-2 text-center font-bold">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {inquiries.filter((inq) =>
+                      isSameDayAs(inq.createdAt, inquiryDate)
+                    ).length === 0 ? (
+                      <tr>
+                        <td
+                          colSpan={7}
+                          className="text-center py-8 text-gray-400"
                         >
-                          <FaTrash />
-                        </button>
-                      </div>
-                    </div>
-                    <div className="mt-3">
-                      {inquiry.venueDetails ? (
-                        <div className="text-gray-300">
-                          <p className="whitespace-pre-wrap">
-                            {inquiry.message || "—"}
-                          </p>
-                          <p className="text-gray-300">
-                            <FaMapPin className="inline mr-1" />
-                            <strong>Venue:</strong>{" "}
-                            {inquiry.venueDetails || "—"}
-                          </p>
-                        </div>
-                      ) : (
-                        <div className="text-gray-300">
-                          <p className="whitespace-pre-wrap">
-                            {inquiry.message || "—"}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="mt-4 pt-4 border-t border-gray-600">
-                      <div className="flex flex-col sm:flex-row gap-2">
-                        <button
-                          onClick={() => {
-                            if (inquiry.contactNumber) {
-                              const phoneNumber = inquiry.contactNumber.replace(
-                                /\D/g,
-                                ""
-                              );
-                              const whatsappUrl = `https://wa.me/91${phoneNumber}`;
-                              window.open(whatsappUrl, "_blank");
-                            }
-                          }}
-                          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-semibold flex items-center w-full sm:w-auto"
-                          disabled={!inquiry.contactNumber}
-                        >
-                          <MdPhone className="mr-2" /> {/* <-- FIXED */}
-                          WhatsApp
-                        </button>
-                        <button
-                          onClick={() => {
-                            if (inquiry.email) {
-                              window.location.href = `mailto:${inquiry.email}`;
-                            }
-                          }}
-                          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold flex items-center w-full sm:w-auto"
-                          disabled={!inquiry.email}
-                        >
-                          <FaEnvelope className="mr-2" />
-                          Email
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
+                          <FaEnvelopeOpen className="text-4xl mb-2 mx-auto" />
+                          <p>No inquiries found for this date.</p>
+                        </td>
+                      </tr>
+                    ) : (
+                      inquiries
+                        .filter((inq) =>
+                          isSameDayAs(inq.createdAt, inquiryDate)
+                        )
+                        .map((inquiry) => (
+                          <tr
+                            key={inquiry.id}
+                            className="border-b border-gray-700 hover:bg-gray-800"
+                          >
+                            <td className="px-4 py-2 font-semibold">
+                              <span
+                                className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                                  inquiry.type === "wedding"
+                                    ? "bg-pink-200 text-pink-800"
+                                    : "bg-blue-200 text-blue-800"
+                                }`}
+                              >
+                                {inquiry.type === "wedding"
+                                  ? "Wedding"
+                                  : "Contact"}
+                              </span>
+                            </td>
+                            <td className="px-4 py-2">
+                              {inquiry.name ||
+                                inquiry.brideName ||
+                                inquiry.groomName ||
+                                "—"}
+                            </td>
+                            <td className="px-4 py-2">
+                              {inquiry.email || "—"}
+                            </td>
+                            <td className="px-4 py-2">
+                              {inquiry.contactNumber || "—"}
+                            </td>
+                            <td className="px-4 py-2 text-gray-300 max-w-xs truncate">
+                              {inquiry.type === "wedding" ? (
+                                <>
+                                  <div>
+                                    <strong>Bride:</strong>{" "}
+                                    {inquiry.brideName || "—"}
+                                  </div>
+                                  <div>
+                                    <strong>Groom:</strong>{" "}
+                                    {inquiry.groomName || "—"}
+                                  </div>
+                                  <div>
+                                    <strong>Guests:</strong>{" "}
+                                    {inquiry.numberOfGuests || "—"}
+                                  </div>
+                                  <div>
+                                    <strong>Venue:</strong>{" "}
+                                    {inquiry.venueDetails || "—"}
+                                  </div>
+                                  <div>
+                                    <strong>Date:</strong>{" "}
+                                    {inquiry.weddingDate || "—"}
+                                  </div>
+                                </>
+                              ) : (
+                                <>
+                                  <div>
+                                    <strong>Subject:</strong>{" "}
+                                    {inquiry.subject || "—"}
+                                  </div>
+                                  <div>
+                                    <strong>Message:</strong>{" "}
+                                    {inquiry.message || "—"}
+                                  </div>
+                                </>
+                              )}
+                            </td>
+                            <td className="px-4 py-2">
+                              {formatDate(inquiry.createdAt)}
+                            </td>
+                            <td className="px-4 py-2 text-center space-x-2">
+                              {inquiry.contactNumber && (
+                                <button
+                                  onClick={() => {
+                                    const phoneNumber =
+                                      inquiry.contactNumber.replace(/\D/g, "");
+                                    const whatsappUrl = `https://wa.me/91${phoneNumber}`;
+                                    window.open(whatsappUrl, "_blank");
+                                  }}
+                                  className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded-lg transition-colors"
+                                  title="WhatsApp"
+                                >
+                                  <MdPhone />
+                                </button>
+                              )}
+                              {inquiry.email && (
+                                <button
+                                  onClick={() => {
+                                    window.location.href = `mailto:${inquiry.email}`;
+                                  }}
+                                  className="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded-lg transition-colors"
+                                  title="Email"
+                                >
+                                  <FaEnvelope />
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}

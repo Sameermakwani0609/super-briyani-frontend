@@ -12,6 +12,7 @@ export function CartProvider({ children }) {
   const [cart, setCart] = useState([]);
   const [isClient, setIsClient] = useState(false);
   const [user, setUser] = useState(null);
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false); // ✅ New state to track order submission
 
   // Load cart from localStorage
   useEffect(() => {
@@ -90,7 +91,6 @@ export function CartProvider({ children }) {
       const result = await signInWithPopup(auth, googleProvider);
       const currentUser = result.user;
 
-      // Save user to Firestore
       const userPayload = {
         name: currentUser.displayName,
         email: currentUser.email,
@@ -102,7 +102,7 @@ export function CartProvider({ children }) {
 
       setUser(currentUser);
 
-      toast.dismiss(); // remove "loading..."
+      toast.dismiss();
       toast.success(`🎉 Welcome, ${currentUser.displayName}!`, {
         icon: "👏",
         style: {
@@ -135,100 +135,105 @@ export function CartProvider({ children }) {
     billingMobile,
     appliedDiscountPercent = 0
   ) => {
-    if (!user) {
-      return toast.error("🔑 Please sign in to continue!", {
-        icon: "🚀",
-        style: {
-          border: "1px solid #FF4D4F",
-          padding: "12px",
-          color: "#fff",
-          background: "#ff4d4f",
-          fontWeight: "bold",
-        },
-      });
-    }
+    if (isPlacingOrder) return; // ✅ Prevent multiple submissions
+    setIsPlacingOrder(true); // ✅ Start loader state
 
-    // ✅ Check all details
-    if (!billingName || !billingMobile || !address) {
-      return toast.error("⚠️ Please fill in all required details!", {
-        icon: "📝",
-        style: {
-          border: "1px solid #FF9800",
-          padding: "12px",
-          color: "#fff",
-          background: "linear-gradient(90deg, #ff9800, #ff5722)",
-          fontWeight: "bold",
-          fontSize: "15px",
-        },
-      });
-    }
-
-    if (!cart || cart.length === 0) {
-      return toast.error("🛒 Your cart is empty, add some items first!", {
-        icon: "🛍️",
-        style: {
-          border: "1px solid #2196F3",
-          padding: "12px",
-          color: "#fff",
-          background: "#2196f3",
-          fontWeight: "bold",
-        },
-      });
-    }
-
-    const subtotal = getCartTotal();
-
-    const pct = Math.max(0, Math.min(100, Number(appliedDiscountPercent) || 0));
-    const itemsWithSnapshot = cart.map((item) => {
-      const unitPrice = Number(item.price || 0);
-      const quantity = Number(item.quantity || 0);
-      const unitDiscountedPrice = Math.max(0, unitPrice * (1 - pct / 100));
-      const lineBaseTotal = unitPrice * quantity;
-      const lineDiscountedTotal = Math.max(0, unitDiscountedPrice * quantity);
-      return {
-        ...item,
-        unitPrice,
-        unitDiscountedPrice,
-        lineBaseTotal,
-        lineDiscountedTotal,
-        appliedDiscountPercent: pct,
-      };
-    });
-    const discountedTotal = itemsWithSnapshot.reduce(
-      (sum, it) => sum + Number(it.lineDiscountedTotal || 0),
-      0
-    );
-    // ✅ Minimum order value check
-    if (discountedTotal < 150) {
-      return toast.error(
-        "🚫 Minimum order value is ₹150, please add more items.",
-        {
-          icon: "⚡",
+    try {
+      if (!user) {
+        return toast.error("🔑 Please sign in to continue!", {
+          icon: "🚀",
           style: {
-            border: "1px solid #E91E63",
+            border: "1px solid #FF4D4F",
             padding: "12px",
             color: "#fff",
-            background: "linear-gradient(90deg, #e91e63, #9c27b0)",
+            background: "#ff4d4f",
+            fontWeight: "bold",
+          },
+        });
+      }
+
+      if (!billingName || !billingMobile || !address) {
+        return toast.error("⚠️ Please fill in all required details!", {
+          icon: "📝",
+          style: {
+            border: "1px solid #FF9800",
+            padding: "12px",
+            color: "#fff",
+            background: "linear-gradient(90deg, #ff9800, #ff5722)",
             fontWeight: "bold",
             fontSize: "15px",
           },
-        }
+        });
+      }
+
+      if (!cart || cart.length === 0) {
+        return toast.error("🛒 Your cart is empty, add some items first!", {
+          icon: "🛍️",
+          style: {
+            border: "1px solid #2196F3",
+            padding: "12px",
+            color: "#fff",
+            background: "#2196f3",
+            fontWeight: "bold",
+          },
+        });
+      }
+
+      const subtotal = getCartTotal();
+
+      const pct = Math.max(
+        0,
+        Math.min(100, Number(appliedDiscountPercent) || 0)
       );
-    }
-    const orderID = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-
-    // Helper: wrap geolocation in a Promise
-    const getLocation = () => {
-      return new Promise((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(
-          (pos) => resolve(pos.coords),
-          (err) => reject(err),
-          { enableHighAccuracy: true, timeout: 10000 }
-        );
+      const itemsWithSnapshot = cart.map((item) => {
+        const unitPrice = Number(item.price || 0);
+        const quantity = Number(item.quantity || 0);
+        const unitDiscountedPrice = Math.max(0, unitPrice * (1 - pct / 100));
+        const lineBaseTotal = unitPrice * quantity;
+        const lineDiscountedTotal = Math.max(0, unitDiscountedPrice * quantity);
+        return {
+          ...item,
+          unitPrice,
+          unitDiscountedPrice,
+          lineBaseTotal,
+          lineDiscountedTotal,
+          appliedDiscountPercent: pct,
+        };
       });
-    };
+      const discountedTotal = itemsWithSnapshot.reduce(
+        (sum, it) => sum + Number(it.lineDiscountedTotal || 0),
+        0
+      );
 
-    try {
+      if (discountedTotal < 150) {
+        return toast.error(
+          "🚫 Minimum order value is ₹150, please add more items.",
+          {
+            icon: "⚡",
+            style: {
+              border: "1px solid #E91E63",
+              padding: "12px",
+              color: "#fff",
+              background: "linear-gradient(90deg, #e91e63, #9c27b0)",
+              fontWeight: "bold",
+              fontSize: "15px",
+            },
+          }
+        );
+      }
+
+      const orderID = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
+      const getLocation = () => {
+        return new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => resolve(pos.coords),
+            (err) => reject(err),
+            { enableHighAccuracy: true, timeout: 10000 }
+          );
+        });
+      };
+
       toast.loading("📍 Getting your location…");
 
       const coords = await getLocation();
@@ -279,6 +284,8 @@ export function CartProvider({ children }) {
           fontWeight: "bold",
         },
       });
+    } finally {
+      setIsPlacingOrder(false); // ✅ Reset loader state
     }
   };
 
@@ -295,6 +302,7 @@ export function CartProvider({ children }) {
         user,
         signInWithGoogle,
         placeOrder,
+        isPlacingOrder, // ✅ Expose this state for the UI
       }}
     >
       {children}

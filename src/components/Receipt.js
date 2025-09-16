@@ -1,7 +1,11 @@
 export default function Receipt({ order }) {
   if (!order || Object.keys(order).length === 0) {
     return (
-      <div id="print-area" className="print-area">
+      <div
+        id="print-area"
+        className="print-area"
+        style={{ fontWeight: "bold" }}
+      >
         <h2>No order data provided</h2>
         <pre>{JSON.stringify(order, null, 2)}</pre>
       </div>
@@ -41,12 +45,17 @@ export default function Receipt({ order }) {
     <div
       id="print-area"
       className="print-area"
-      style={{ fontFamily: "monospace", width: "100%", padding: "8px 0" }}
+      style={{
+        fontFamily: "monospace",
+        width: "100%",
+        padding: "8px 0",
+        fontWeight: "bold",
+      }}
     >
       <div style={{ textAlign: "center", marginBottom: 8 }}>
         <div style={{ marginTop: 8 }}>
           <img
-            src="/biryanii.jpg"
+            src="/AsifBiryani.jpg"
             alt="Logo"
             style={{
               width: 48,
@@ -57,37 +66,19 @@ export default function Receipt({ order }) {
             }}
           />
         </div>
-        <h2
-          style={{
-            fontWeight: "bold",
-            fontSize: 18,
-            margin: 0,
-            color: "#d97706",
-          }}
-        >
-          Super Briyani
-        </h2>
         <div style={{ fontSize: 12, color: "#555", marginBottom: 2 }}>
           Order Receipt
         </div>
       </div>
+
       <div style={{ fontSize: 12, marginBottom: 4 }}>
-        <div>
-          Order ID: <b>{order.orderID || order.id}</b>
-        </div>
-        <div>
-          Date: <b>{orderDate}</b>
-        </div>
-        <div>
-          Customer: <b>{order.billingName || order.name}</b>
-        </div>
-        <div>
-          Mobile: <b>{order.billingMobile || "—"}</b>
-        </div>
-        <div>
-          Address: <b>{order.address}</b>
-        </div>
+        <div>Order ID: {order.orderID || order.id}</div>
+        <div>Date: {orderDate}</div>
+        <div>Customer: {order.billingName || order.name}</div>
+        <div>Mobile: {order.billingMobile || "—"}</div>
+        <div>Address: {order.address}</div>
       </div>
+
       <hr
         style={{
           border: "none",
@@ -95,8 +86,9 @@ export default function Receipt({ order }) {
           margin: "8px 0",
         }}
       />
+
       <div style={{ fontSize: 12, marginBottom: 4 }}>
-        <div style={{ fontWeight: "bold", marginBottom: 2 }}>Items</div>
+        <div style={{ marginBottom: 2 }}>Items</div>
         <table
           style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}
         >
@@ -149,6 +141,7 @@ export default function Receipt({ order }) {
           </tbody>
         </table>
       </div>
+
       <hr
         style={{
           border: "none",
@@ -156,6 +149,7 @@ export default function Receipt({ order }) {
           margin: "8px 0",
         }}
       />
+
       <div style={{ fontSize: 13, marginBottom: 2 }}>
         <div>
           Subtotal:{" "}
@@ -167,11 +161,12 @@ export default function Receipt({ order }) {
             -₹{totalDiscount.toFixed(2)}
           </span>
         </div>
-        <div style={{ fontWeight: "bold", fontSize: 15, color: "#d97706" }}>
+        <div style={{ fontSize: 15, color: "#d97706" }}>
           Total:{" "}
           <span style={{ float: "right" }}>₹{finalTotal.toFixed(2)}</span>
         </div>
       </div>
+
       <hr
         style={{
           border: "none",
@@ -179,18 +174,18 @@ export default function Receipt({ order }) {
           margin: "8px 0",
         }}
       />
+
       <div
         style={{
           textAlign: "center",
           fontSize: 13,
           marginTop: 8,
           color: "#d97706",
-          fontWeight: "bold",
         }}
       >
-        Thank you for choosing Super Briyani!
+        Thank you for choosing Asif Bhai's Biryani!
         <br />
-        <span style={{ fontSize: 12, color: "#555", fontWeight: "normal" }}>
+        <span style={{ fontSize: 12, color: "#555" }}>
           We hope you enjoy your meal. Visit again!
         </span>
       </div>
