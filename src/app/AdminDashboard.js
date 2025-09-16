@@ -751,7 +751,7 @@ For any queries, contact us at our restaurant.`;
 
           // Send WhatsApp notification
           if (order.billingMobile) {
-            const message = `🍽️ *Asif's Briyani - Order Update* \n\n*Order ID:* ${
+            const message = `🍽️ *Asif's Biryani - Order Update* \n\n*Order ID:* ${
               order.orderID || `#${id}`
             }\n*Status:* ❌ REJECTED\n\nDear ${
               order.billingName || order.name
@@ -759,7 +759,7 @@ For any queries, contact us at our restaurant.`;
               order.createdAt
             )}\n• Delivery Address: ${
               order.address
-            }\n\nWe apologize for any inconvenience caused. Please feel free to place a new order or contact us for assistance.\n\nThank you for considering Asif's Briyani! 🙏`;
+            }\n\nWe apologize for any inconvenience caused. Please feel free to place a new order or contact us for assistance.\n\nThank you for considering Asif Bhais Briyani! 🙏`;
 
             await sendWhatsAppMessage(order.billingMobile, message);
           }
@@ -843,7 +843,7 @@ For any queries, contact us at our restaurant.`;
               <FaUtensils className="text-3xl p-2 bg-black/10 rounded-xl shadow-sm" />
               <div className="leading-tight">
                 <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">
-                   Asif Bhai&apos;s Biryani Admin
+                  Asif Bhai&apos;s Biryani Admin
                 </h1>
                 <p className="text-xs md:text-sm font-semibold opacity-70 -mt-0.5">
                   Dashboard

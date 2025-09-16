@@ -183,7 +183,8 @@ export default function Receipt({ order }) {
           color: "#d97706",
         }}
       >
-        Thank you for choosing Asif Bhai's Biryani!
+     <p>Thank you for choosing Asif Bhai&apos;s Biryani!</p>
+
         <br />
         <span style={{ fontSize: 12, color: "#555" }}>
           We hope you enjoy your meal. Visit again!
