@@ -22,7 +22,7 @@ export default function Receipt({ order }) {
     orderDate = new Date().toLocaleString();
   }
 
-  // Calculate totals and show original/discounted prices
+  // Calculate totals
   let subtotal = 0,
     totalDiscount = 0,
     finalTotal = 0;
@@ -49,29 +49,39 @@ export default function Receipt({ order }) {
         fontFamily: "monospace",
         width: "100%",
         padding: "8px 0",
-        fontWeight: "bold",
+        fontWeight: "bold", // overall bold
+        color: "#000", // ensure dark print text
       }}
     >
+      {/* Header / Logo */}
       <div style={{ textAlign: "center", marginBottom: 8 }}>
         <div style={{ marginTop: 8 }}>
           <img
             src="/AsifBiryani.jpg"
             alt="Logo"
             style={{
-              width: 48,
-              height: 48,
+              width: 80, // bigger logo
+              height: 80,
               borderRadius: "50%",
               margin: "0 auto 6px auto",
               display: "block",
             }}
           />
         </div>
-        <div style={{ fontSize: 12, color: "#555", marginBottom: 2 }}>
+        <div
+          style={{
+            fontSize: 14,
+            color: "#000", // dark
+            marginBottom: 4,
+            fontWeight: "bold",
+          }}
+        >
           Order Receipt
         </div>
       </div>
 
-      <div style={{ fontSize: 12, marginBottom: 4 }}>
+      {/* Order details */}
+      <div style={{ fontSize: 13, marginBottom: 6 }}>
         <div>Order ID: {order.orderID || order.id}</div>
         <div>Date: {orderDate}</div>
         <div>Customer: {order.billingName || order.name}</div>
@@ -79,21 +89,16 @@ export default function Receipt({ order }) {
         <div>Address: {order.address}</div>
       </div>
 
-      <hr
-        style={{
-          border: "none",
-          borderTop: "1px dashed #bbb",
-          margin: "8px 0",
-        }}
-      />
+      <hr style={{ border: "1px dashed #000", margin: "8px 0" }} />
 
-      <div style={{ fontSize: 12, marginBottom: 4 }}>
+      {/* Items Table */}
+      <div style={{ fontSize: 13, marginBottom: 6 }}>
         <div style={{ marginBottom: 2 }}>Items</div>
         <table
-          style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}
+          style={{ width: "100%", fontSize: 13, borderCollapse: "collapse" }}
         >
           <thead>
-            <tr style={{ borderBottom: "1px solid #eee" }}>
+            <tr style={{ borderBottom: "1px solid #000" }}>
               <th style={{ textAlign: "left" }}>Item</th>
               <th>Qty</th>
               <th>Orig</th>
@@ -116,7 +121,7 @@ export default function Receipt({ order }) {
                 const itemDiscount = (origPrice - discPrice) * qty;
                 const itemTotal = origPrice * qty - itemDiscount;
                 return (
-                  <tr key={idx} style={{ borderBottom: "1px dotted #eee" }}>
+                  <tr key={idx} style={{ borderBottom: "1px dotted #000" }}>
                     <td>{item.itemName || item.name}</td>
                     <td style={{ textAlign: "center" }}>{qty}</td>
                     <td style={{ textAlign: "right" }}>
@@ -142,15 +147,10 @@ export default function Receipt({ order }) {
         </table>
       </div>
 
-      <hr
-        style={{
-          border: "none",
-          borderTop: "1px dashed #bbb",
-          margin: "8px 0",
-        }}
-      />
+      <hr style={{ border: "1px dashed #000", margin: "8px 0" }} />
 
-      <div style={{ fontSize: 13, marginBottom: 2 }}>
+      {/* Totals */}
+      <div style={{ fontSize: 14, marginBottom: 4 }}>
         <div>
           Subtotal:{" "}
           <span style={{ float: "right" }}>₹{subtotal.toFixed(2)}</span>
@@ -161,32 +161,27 @@ export default function Receipt({ order }) {
             -₹{totalDiscount.toFixed(2)}
           </span>
         </div>
-        <div style={{ fontSize: 15, color: "#d97706" }}>
+        <div style={{ fontSize: 16, color: "#000" }}>
           Total:{" "}
           <span style={{ float: "right" }}>₹{finalTotal.toFixed(2)}</span>
         </div>
       </div>
 
-      <hr
-        style={{
-          border: "none",
-          borderTop: "1px dashed #bbb",
-          margin: "8px 0",
-        }}
-      />
+      <hr style={{ border: "1px dashed #000", margin: "8px 0" }} />
 
+      {/* Footer */}
       <div
         style={{
           textAlign: "center",
-          fontSize: 13,
+          fontSize: 14,
           marginTop: 8,
-          color: "#d97706",
+          color: "#000",
+          fontWeight: "bold",
         }}
       >
-     <p>Thank you for choosing Asif Bhai&apos;s Biryani!</p>
-
+        <p>Thank you for choosing Asif Bhai&apos;s Biryani!</p>
         <br />
-        <span style={{ fontSize: 12, color: "#555" }}>
+        <span style={{ fontSize: 13, color: "#000" }}>
           We hope you enjoy your meal. Visit again!
         </span>
       </div>
