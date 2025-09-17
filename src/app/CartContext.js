@@ -183,7 +183,7 @@ export function CartProvider({ children }) {
 
       // Fetch category-specific discounts (fallback to appliedDiscountPercent)
       let categoryDiscounts = {};
-      let globalFlat = 0;
+      let globalPercentFromShop = 0;
       try {
         const snap = await getDocs(collection(db, "shop"));
         snap.forEach((d) => {
@@ -191,8 +191,8 @@ export function CartProvider({ children }) {
           if (data.CategoryDiscounts && typeof data.CategoryDiscounts === "object") {
             categoryDiscounts = data.CategoryDiscounts || {};
           }
-          if (typeof data.DiscountFlat === "number") {
-            globalFlat = Math.max(0, Number(data.DiscountFlat) || 0);
+          if (typeof data.DiscountPercent === "number") {
+            globalPercentFromShop = Math.max(0, Math.min(100, Number(data.DiscountPercent) || 0));
           }
         });
       } catch {}
@@ -202,30 +202,28 @@ export function CartProvider({ children }) {
         if (!Number.isFinite(n)) return 0;
         return Math.max(0, Math.min(100, n));
       };
-      const globalPct = normalizePercent(appliedDiscountPercent);
+      const globalPct = normalizePercent(appliedDiscountPercent || globalPercentFromShop);
       const resolveDiscountForItem = (item) => {
         const cat = item?.category;
-        if (!cat) return globalFlat > 0 ? { type: "flat", value: globalFlat } : { type: "percent", value: globalPct };
+        if (!cat) return { type: "percent", value: globalPct };
         const key = String(cat).toLowerCase();
         for (const [k, v] of Object.entries(categoryDiscounts || {})) {
           if (String(k).toLowerCase() === key) {
             if (v && typeof v === "object") {
-              if (v.type === "flat") return { type: "flat", value: Math.max(0, Number(v.value) || 0) };
+              if (v.type === "flat") return { type: "percent", value: 0 };
               return { type: "percent", value: normalizePercent(v.value) };
             }
             return { type: "percent", value: normalizePercent(v) };
           }
         }
-        return globalFlat > 0 ? { type: "flat", value: globalFlat } : { type: "percent", value: globalPct };
+        return { type: "percent", value: globalPct };
       };
 
       const itemsWithSnapshot = cart.map((item) => {
         const disc = resolveDiscountForItem(item);
         const unitPrice = Number(item.price || 0);
         const quantity = Number(item.quantity || 0);
-        const unitDiscountedPrice = disc.type === "flat"
-          ? Math.max(0, unitPrice - Math.min(unitPrice, Number(disc.value) || 0))
-          : Math.max(0, unitPrice * (1 - (Number(disc.value) || 0) / 100));
+        const unitDiscountedPrice = Math.max(0, unitPrice * (1 - (Number(disc.value) || 0) / 100));
         const lineBaseTotal = unitPrice * quantity;
         const lineDiscountedTotal = Math.max(0, unitDiscountedPrice * quantity);
         return {
@@ -234,9 +232,9 @@ export function CartProvider({ children }) {
           unitDiscountedPrice,
           lineBaseTotal,
           lineDiscountedTotal,
-          appliedDiscountPercent: disc.type === "percent" ? Number(disc.value) || 0 : 0,
-          appliedDiscountFlat: disc.type === "flat" ? Number(disc.value) || 0 : 0,
-          appliedDiscountType: disc.type,
+          appliedDiscountPercent: Number(disc.value) || 0,
+          appliedDiscountFlat: 0,
+          appliedDiscountType: "percent",
         };
       });
       const discountedTotal = itemsWithSnapshot.reduce(

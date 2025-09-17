@@ -171,8 +171,8 @@ export default function AdminDashboard() {
         if (typeof docData.CityLng === "number") setAdminLng(docData.CityLng);
         if (typeof docData.DeliveryRadiusKm === "number")
           setDeliveryRadiusKm(docData.DeliveryRadiusKm);
-        if (typeof docData.DiscountFlat === "number")
-          setDiscountPercent(docData.DiscountFlat);
+        if (typeof docData.DiscountPercent === "number")
+          setDiscountPercent(docData.DiscountPercent);
         if (docData.CategoryDiscounts && typeof docData.CategoryDiscounts === "object") {
           setCategoryDiscounts(docData.CategoryDiscounts || {});
         }
@@ -412,11 +412,11 @@ export default function AdminDashboard() {
       if (!shopDocId) return;
       const amt = Math.max(0, Number(discountPercent) || 0);
       await updateDoc(doc(db, "shop", shopDocId), {
-        DiscountFlat: amt,
+        DiscountPercent: amt,
         DiscountUpdatedAt: new Date().toISOString(),
       });
       setDiscountPercent(amt);
-      showNotification("Flat discount saved");
+      showNotification("Percentage discount saved");
     } catch {
       showNotification("Failed to save discount", "error");
     }
@@ -432,7 +432,7 @@ export default function AdminDashboard() {
       }
       const valNum = Number(discountCategoryPercent) || 0;
       const updated = { ...(categoryDiscounts || {}) };
-      updated[cat] = { type: "flat", value: Math.max(0, valNum) };
+      updated[cat] = { type: "percent", value: Math.max(0, Math.min(100, valNum)) };
       await updateDoc(doc(db, "shop", shopDocId), {
         CategoryDiscounts: updated,
         DiscountUpdatedAt: new Date().toISOString(),
@@ -1917,13 +1917,6 @@ const rejectOrder = async (id) => {
                     )}
                     Detect My Location
                   </button>
-                  <button
-                    onClick={saveAdminCity}
-                    className="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-semibold flex items-center justify-center"
-                  >
-                    <FaSave className="mr-2" />
-                    Save Location
-                  </button>
                 </div>
                 {locMessage && (
                   <p
@@ -1952,6 +1945,16 @@ const rejectOrder = async (id) => {
                   className="w-full bg-gray-800 border border-gray-700 text-white px-4 py-2 rounded-lg focus:outline-none"
                 />
               </div>
+              {/* Save Location at the end */}
+              <div className="mt-6">
+                <button
+                  onClick={saveAdminCity}
+                  className="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-semibold flex items-center justify-center"
+                >
+                  <FaSave className="mr-2" />
+                  Save Location
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -1959,15 +1962,16 @@ const rejectOrder = async (id) => {
           <div className="max-w-md mx-auto">
             <div className="bg-gray-900 rounded-lg p-6 border border-yellow-500 shadow-lg">
               <h2 className="text-2xl font-bold text-yellow-400 mb-4 text-center">
-                Set Discount
+                Set Discount (%)
               </h2>
               <div className="mb-4">
                 <label className="block text-yellow-400 font-semibold mb-2">
-                  Discount (₹)
+                  Discount (%)
                 </label>
                 <input
                   type="number"
                   min="0"
+                  max="100"
                   value={discountPercent}
                   onChange={(e) => setDiscountPercent(e.target.value)}
                   className="w-full bg-gray-800 border border-gray-700 text-white px-4 py-2 rounded-lg focus:outline-none"
@@ -2004,14 +2008,15 @@ const rejectOrder = async (id) => {
                 
                 <div>
                   <label className="block text-yellow-400 font-semibold mb-2">
-                    Discount (₹)
+                    Discount (%)
                   </label>
                   <input
                     type="number"
                     min="0"
+                    max="100"
                     value={discountCategoryPercent}
                     onChange={(e) => setDiscountCategoryPercent(e.target.value)}
-                    placeholder={"e.g. 50 for ₹50 off"}
+                    placeholder={"e.g. 10 for 10% off"}
                     className="w-full bg-gray-800 border border-gray-700 text-white px-4 py-2 rounded-lg focus:outline-none"
                   />
                 </div>

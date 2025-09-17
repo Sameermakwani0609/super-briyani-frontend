@@ -64,9 +64,7 @@ export default function Cart() {
           if (typeof data.DiscountPercent === "number") {
             setDiscountPercent(data.DiscountPercent);
           }
-          if (typeof data.DiscountFlat === "number") {
-            setDiscountFlat(data.DiscountFlat);
-          }
+          // Flat discount removed from usage; kept for backward compatibility
           if (data.CategoryDiscounts && typeof data.CategoryDiscounts === "object") {
             setCategoryDiscounts(data.CategoryDiscounts || {});
           }
@@ -78,13 +76,13 @@ export default function Cart() {
   }, []);
 
   const getDiscountForCategory = (category) => {
-    const global = { type: "flat", value: Math.max(0, Number(discountFlat) || 0) };
+    const global = { type: "percent", value: Math.max(0, Math.min(100, Number(discountPercent) || 0)) };
     if (!category) return global;
     const key = String(category).toLowerCase();
     for (const [catKey, val] of Object.entries(categoryDiscounts || {})) {
       if (String(catKey).toLowerCase() === key) {
         if (val && typeof val === "object") {
-          if (val.type === "flat") return { type: "flat", value: Math.max(0, Number(val.value) || 0) };
+          if (val.type === "flat") return { type: "percent", value: 0 };
           return { type: "percent", value: Math.max(0, Math.min(100, Number(val.value) || 0)) };
         }
         const n = Number(val);

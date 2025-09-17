@@ -46,19 +46,18 @@ export default function MenuPage() {
         const shopSnapshot = await getDocs(collection(db, "shop"));
         let openStatus = false;
         let discount = 0;
-        let flat = 0;
         shopSnapshot.forEach((doc) => {
           const data = doc.data() || {};
           if (data.IsOpen !== undefined) openStatus = data.IsOpen;
           if (typeof data.DiscountPercent === "number") discount = data.DiscountPercent;
-          if (typeof data.DiscountFlat === "number") flat = data.DiscountFlat;
+          // Flat discount removed from usage
           if (data.CategoryDiscounts && typeof data.CategoryDiscounts === "object") {
             setCategoryDiscounts(data.CategoryDiscounts || {});
           }
         });
         setIsOpen(openStatus);
         setDiscountPercent(discount);
-        setDiscountFlat(flat);
+        // no flat usage
       } catch {
         setIsOpen(false);
       }
@@ -113,19 +112,13 @@ export default function MenuPage() {
   };
 
   const getDiscountForCategory = (category, price) => {
-    const fallbackFlat = Number(discountFlat) || 0;
-    const fallback = { type: "flat", value: Math.max(0, fallbackFlat) };
-    if (!category) return fallback;
+    const global = { type: "percent", value: Math.max(0, Math.min(100, Number(discountPercent) || 0)) };
+    if (!category) return global;
     const key = String(category).toLowerCase();
     for (const [catKey, val] of Object.entries(categoryDiscounts || {})) {
       if (String(catKey).toLowerCase() === key) {
         if (val && typeof val === "object") {
-          if (val.type === "flat") {
-            const amt = Math.max(0, Number(val.value) || 0);
-            // effectivePercent is only for display use if ever needed
-            const pct = price > 0 ? Math.min(100, (amt / price) * 100) : 0;
-            return { type: "flat", value: amt, effectivePercent: pct };
-          }
+          if (val.type === "flat") return { type: "percent", value: 0 };
           const pct = Math.max(0, Math.min(100, Number(val.value) || 0));
           return { type: "percent", value: pct };
         }
@@ -133,7 +126,7 @@ export default function MenuPage() {
         if (Number.isFinite(n)) return { type: "percent", value: Math.max(0, Math.min(100, n)) };
       }
     }
-    return fallback;
+    return global;
   };
 
   const getCartQuantity = (itemId) => {
@@ -227,9 +220,7 @@ export default function MenuPage() {
             const quantity = getCartQuantity(item.id);
             const price = Number(item.price || 0);
             const disc = getDiscountForCategory(item.category, price);
-            const discounted = disc.type === "flat"
-              ? Math.max(0, price - Math.min(price, Number(disc.value || 0)))
-              : Math.max(0, price * (1 - (Number(disc.value) || 0) / 100));
+            const discounted = Math.max(0, price * (1 - (Number(disc.value) || 0) / 100));
             const showDiscount = discounted !== price;
             return (
               <div
@@ -259,11 +250,7 @@ export default function MenuPage() {
                       <span className="text-yellow-400 font-bold">
                         ₹{discounted.toFixed(2)}
                       </span>
-                      <span className="text-xs text-green-400">
-                        {disc.type === "flat"
-                          ? `(₹${Math.min(price, Number(disc.value || 0))} off)`
-                          : `(${Number(disc.value)}% off)`}
-                      </span>
+                      <span className="text-xs text-green-400">({`${Number(disc.value)}% off`})</span>
                     </div>
                   ) : (
                     <span>₹{price.toFixed(2)}</span>
