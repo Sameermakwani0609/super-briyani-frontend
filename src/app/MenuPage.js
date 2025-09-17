@@ -6,6 +6,7 @@ import { FaMinus, FaPlus } from "react-icons/fa";
 import { useCart } from "./CartContext";
 import { db } from "../../lib/firebase";
 import { collection, getDocs } from "firebase/firestore";
+import FeaturedMenu from "./FeaturedMenuInside";
 
 export default function MenuPage() {
   const [menuItems, setMenuItems] = useState([]);
@@ -49,9 +50,13 @@ export default function MenuPage() {
         shopSnapshot.forEach((doc) => {
           const data = doc.data() || {};
           if (data.IsOpen !== undefined) openStatus = data.IsOpen;
-          if (typeof data.DiscountPercent === "number") discount = data.DiscountPercent;
+          if (typeof data.DiscountPercent === "number")
+            discount = data.DiscountPercent;
           // Flat discount removed from usage
-          if (data.CategoryDiscounts && typeof data.CategoryDiscounts === "object") {
+          if (
+            data.CategoryDiscounts &&
+            typeof data.CategoryDiscounts === "object"
+          ) {
             setCategoryDiscounts(data.CategoryDiscounts || {});
           }
         });
@@ -112,7 +117,10 @@ export default function MenuPage() {
   };
 
   const getDiscountForCategory = (category, price) => {
-    const global = { type: "percent", value: Math.max(0, Math.min(100, Number(discountPercent) || 0)) };
+    const global = {
+      type: "percent",
+      value: Math.max(0, Math.min(100, Number(discountPercent) || 0)),
+    };
     if (!category) return global;
     const key = String(category).toLowerCase();
     for (const [catKey, val] of Object.entries(categoryDiscounts || {})) {
@@ -123,7 +131,8 @@ export default function MenuPage() {
           return { type: "percent", value: pct };
         }
         const n = Number(val);
-        if (Number.isFinite(n)) return { type: "percent", value: Math.max(0, Math.min(100, n)) };
+        if (Number.isFinite(n))
+          return { type: "percent", value: Math.max(0, Math.min(100, n)) };
       }
     }
     return global;
@@ -177,6 +186,7 @@ export default function MenuPage() {
           </span>
         </div>
 
+
         {/* Search Bar */}
         <div className="flex justify-center mb-6 sm:mb-8 px-4">
           <input
@@ -214,13 +224,18 @@ export default function MenuPage() {
           </div>
         </div>
 
+        <FeaturedMenu />
+
         {/* Menu Items Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {paginatedItems.map((item) => {
             const quantity = getCartQuantity(item.id);
             const price = Number(item.price || 0);
             const disc = getDiscountForCategory(item.category, price);
-            const discounted = Math.max(0, price * (1 - (Number(disc.value) || 0) / 100));
+            const discounted = Math.max(
+              0,
+              price * (1 - (Number(disc.value) || 0) / 100)
+            );
             const showDiscount = discounted !== price;
             return (
               <div
@@ -250,7 +265,9 @@ export default function MenuPage() {
                       <span className="text-yellow-400 font-bold">
                         ₹{discounted.toFixed(2)}
                       </span>
-                      <span className="text-xs text-green-400">({`${Number(disc.value)}% off`})</span>
+                      <span className="text-xs text-green-400">
+                        ({`${Number(disc.value)}% off`})
+                      </span>
                     </div>
                   ) : (
                     <span>₹{price.toFixed(2)}</span>
