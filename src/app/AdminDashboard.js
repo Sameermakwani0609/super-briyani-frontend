@@ -1070,6 +1070,7 @@ For any queries, contact us at our restaurant.`;
                     <option value="Beverage">Beverage</option>
                     <option value="Special">Special</option>
                     <option value="Veg">Veg</option>
+                    <option value="Khichda">Khichda</option>
                   </select>
                 </div>
                 <div>
@@ -2151,6 +2152,7 @@ For any queries, contact us at our restaurant.`;
                   <option value="Beverage">Beverage</option>
                   <option value="Special">Special</option>
                   <option value="Veg">Veg</option>
+                  <option value="Khichda">Khichda</option>
                 </select>
               </div>
               <div>

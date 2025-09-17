@@ -18,7 +18,7 @@ export default function Contact() {
     name: "",
     email: "",
     subject: "",
-    message: ""
+    message: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState("");
@@ -35,11 +35,11 @@ export default function Contact() {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
-    setErrors(prev => ({ ...prev, [name]: undefined }));
+    setErrors((prev) => ({ ...prev, [name]: undefined }));
   };
 
   const handleSubmit = async (e) => {
@@ -60,17 +60,19 @@ export default function Contact() {
         subject: formData.subject,
         message: formData.message,
         createdAt: serverTimestamp(),
-        status: "new"
+        status: "new",
       };
 
       await addDoc(collection(db, "inquiries"), inquiryData);
-      
-      setSubmitMessage("Message sent successfully! We'll get back to you soon.");
+
+      setSubmitMessage(
+        "Message sent successfully! We'll get back to you soon."
+      );
       setFormData({
         name: "",
         email: "",
         subject: "",
-        message: ""
+        message: "",
       });
     } catch (error) {
       console.error("Error submitting contact form:", error);
@@ -84,7 +86,8 @@ export default function Contact() {
     const errs = {};
     if (!formData.name?.trim()) errs.name = "Name is required";
     if (!formData.email?.trim()) errs.email = "Email is required";
-    else if (!/^\S+@\S+\.\S+$/.test(formData.email)) errs.email = "Enter a valid email";
+    else if (!/^\S+@\S+\.\S+$/.test(formData.email))
+      errs.email = "Enter a valid email";
     if (!formData.subject?.trim()) errs.subject = "Subject is required";
     if (!formData.message?.trim()) errs.message = "Message is required";
     setErrors(errs);
@@ -168,10 +171,16 @@ export default function Contact() {
                     onChange={handleInputChange}
                     placeholder="Your Name"
                     aria-invalid={!!errors.name}
-                    className={`bg-black/50 border ${errors.name ? 'border-red-500 focus:border-red-500' : 'border-yellow-400/30 focus:border-yellow-400'} rounded-lg px-4 py-3 focus:outline-none text-white`}
+                    className={`bg-black/50 border ${
+                      errors.name
+                        ? "border-red-500 focus:border-red-500"
+                        : "border-yellow-400/30 focus:border-yellow-400"
+                    } rounded-lg px-4 py-3 focus:outline-none text-white`}
                     required
                   />
-                  {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
+                  {errors.name && (
+                    <p className="text-red-500 text-xs mt-1">{errors.name}</p>
+                  )}
                 </div>
                 <div>
                   <input
@@ -181,10 +190,16 @@ export default function Contact() {
                     onChange={handleInputChange}
                     placeholder="Your Email"
                     aria-invalid={!!errors.email}
-                    className={`bg-black/50 border ${errors.email ? 'border-red-500 focus:border-red-500' : 'border-yellow-400/30 focus:border-yellow-400'} rounded-lg px-4 py-3 focus:outline-none text-white`}
+                    className={`bg-black/50 border ${
+                      errors.email
+                        ? "border-red-500 focus:border-red-500"
+                        : "border-yellow-400/30 focus:border-yellow-400"
+                    } rounded-lg px-4 py-3 focus:outline-none text-white`}
                     required
                   />
-                  {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
+                  {errors.email && (
+                    <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+                  )}
                 </div>
               </div>
               <input
@@ -194,10 +209,16 @@ export default function Contact() {
                 onChange={handleInputChange}
                 placeholder="Subject"
                 aria-invalid={!!errors.subject}
-                className={`w-full bg-black/50 border ${errors.subject ? 'border-red-500 focus:border-red-500' : 'border-yellow-400/30 focus:border-yellow-400'} rounded-lg px-4 py-3 focus:outline-none text-white`}
+                className={`w-full bg-black/50 border ${
+                  errors.subject
+                    ? "border-red-500 focus:border-red-500"
+                    : "border-yellow-400/30 focus:border-yellow-400"
+                } rounded-lg px-4 py-3 focus:outline-none text-white`}
                 required
               />
-              {errors.subject && <p className="text-red-500 text-xs mt-1">{errors.subject}</p>}
+              {errors.subject && (
+                <p className="text-red-500 text-xs mt-1">{errors.subject}</p>
+              )}
               <textarea
                 name="message"
                 value={formData.message}
@@ -205,22 +226,30 @@ export default function Contact() {
                 placeholder="Your Message"
                 rows="5"
                 aria-invalid={!!errors.message}
-                className={`w-full bg-black/50 border ${errors.message ? 'border-red-500 focus:border-red-500' : 'border-yellow-400/30 focus:border-yellow-400'} rounded-lg px-4 py-3 focus:outline-none text-white`}
+                className={`w-full bg-black/50 border ${
+                  errors.message
+                    ? "border-red-500 focus:border-red-500"
+                    : "border-yellow-400/30 focus:border-yellow-400"
+                } rounded-lg px-4 py-3 focus:outline-none text-white`}
                 required
               ></textarea>
-              {errors.message && <p className="text-red-500 text-xs mt-1">{errors.message}</p>}
+              {errors.message && (
+                <p className="text-red-500 text-xs mt-1">{errors.message}</p>
+              )}
 
               {submitMessage && (
-                <div className={`p-3 rounded-lg text-center ${
-                  submitMessage.includes("successfully") 
-                    ? "bg-green-600 text-white" 
-                    : "bg-red-600 text-white"
-                }`}>
+                <div
+                  className={`p-3 rounded-lg text-center ${
+                    submitMessage.includes("successfully")
+                      ? "bg-green-600 text-white"
+                      : "bg-red-600 text-white"
+                  }`}
+                >
                   {submitMessage}
                 </div>
               )}
 
-              <button 
+              <button
                 type="submit"
                 disabled={isSubmitting}
                 className="w-full bg-gradient-to-r from-yellow-400 to-yellow-600 text-black py-3 rounded-lg font-semibold hover:shadow-lg transition-all flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"

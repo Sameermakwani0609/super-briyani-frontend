@@ -11,14 +11,13 @@ export default function MenuPage() {
   const [menuItems, setMenuItems] = useState([]);
   const [categories, setCategories] = useState([]);
   const [filter, setFilter] = useState("all");
-  const [searchQuery, setSearchQuery] = useState(""); // Search state
+  const [searchQuery, setSearchQuery] = useState("");
   const [isOpen, setIsOpen] = useState(null);
   const [discountPercent, setDiscountPercent] = useState(0);
   const { addToCart, cart, updateQuantity } = useCart();
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(9);
 
-  // Handle responsive items per page
   useEffect(() => {
     function handleResize() {
       if (window.innerWidth < 640) {
@@ -39,7 +38,6 @@ export default function MenuPage() {
     all: GiKnifeFork,
   };
 
-  // Fetch shop status and menu items
   useEffect(() => {
     const fetchShopStatusAndMenu = async () => {
       try {
@@ -91,7 +89,6 @@ export default function MenuPage() {
     fetchShopStatusAndMenu();
   }, []);
 
-  // Filter items based on category and search query
   const filteredItems = menuItems.filter((item) => {
     const matchesCategory =
       filter === "all" || item.category.toLowerCase() === filter.toLowerCase();
@@ -142,9 +139,19 @@ export default function MenuPage() {
     <section className="pt-20 pb-10 bg-black text-white min-h-screen">
       <div className="container mx-auto px-2 sm:px-4">
         {/* Heading */}
-        <h2 className="text-3xl sm:text-5xl font-bold text-center text-yellow-400 mb-4 sm:mb-6 drop-shadow-lg">
+        <h2 className="text-3xl sm:text-5xl font-bold text-center text-yellow-400 mb-2 sm:mb-4 drop-shadow-lg">
           Our Menu
         </h2>
+
+        {/* ✅ Notice Section */}
+        <div className="flex flex-col sm:flex-row justify-center items-center gap-3 mb-6 sm:mb-8">
+          <span className="bg-red-600 text-white text-sm sm:text-base px-4 py-2 rounded-full shadow-md font-semibold animate-pulse">
+            ❌ Not on Zomato & Swiggy
+          </span>
+          <span className="bg-green-600 text-white text-sm sm:text-base px-4 py-2 rounded-full shadow-md font-semibold">
+            🥩 No Beef Served
+          </span>
+        </div>
 
         {/* Search Bar */}
         <div className="flex justify-center mb-6 sm:mb-8 px-4">

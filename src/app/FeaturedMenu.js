@@ -11,12 +11,24 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
-import { Navigation, Pagination } from "swiper/modules";
+import { Pagination, Autoplay } from "swiper/modules";
 
 export default function FeaturedMenu() {
   const [menuItems, setMenuItems] = useState([]);
   const [discountPercent, setDiscountPercent] = useState(0);
   const { addToCart, cart, updateQuantity } = useCart();
+
+  // ✅ track if user is on mobile
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768); // mobile breakpoint (< md)
+    };
+    handleResize(); // run on mount
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   useEffect(() => {
     const fetchMenuItems = async () => {
@@ -161,7 +173,7 @@ export default function FeaturedMenu() {
         <div className="block lg:hidden">
           {menuItems.length > 3 ? (
             <Swiper
-              modules={[Pagination]}
+              modules={[Pagination, Autoplay]}
               spaceBetween={20}
               slidesPerView={1}
               breakpoints={{
@@ -171,7 +183,9 @@ export default function FeaturedMenu() {
               }}
               pagination={{ clickable: true }}
               loop={true}
-              autoplay={{ delay: 3000 }}
+              autoplay={
+                isMobile ? { delay: 1000, disableOnInteraction: false } : false
+              }
               className="pb-10"
             >
               {menuItems.map((item) => (
@@ -211,16 +225,14 @@ export default function FeaturedMenu() {
       </div>
       {/* Swiper theme overrides */}
       <style jsx global>{`
-        /* Remove navigation arrow styles */
         .swiper-pagination-bullet {
-          background: #facc15 !important; /* Tailwind yellow-400 */
+          background: #facc15 !important;
           opacity: 1;
         }
         .swiper-pagination-bullet-active {
-          background: #f59e0b !important; /* Tailwind yellow-500 */
+          background: #f59e0b !important;
         }
 
-        /* Desktop horizontal scroll styling */
         .menu-scroll {
           scrollbar-width: thin;
           scrollbar-color: #facc15 transparent;
