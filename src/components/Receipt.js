@@ -127,7 +127,13 @@ export default function Receipt({ order }) {
                     <td style={{ textAlign: "right" }}>
                       ₹{origPrice.toFixed(2)}
                     </td>
-                    <td style={{ textAlign: "right", color: "#059669" }}>
+                    <td
+                      style={{
+                        textAlign: "right",
+                        color: "#059669",
+                        fontWeight: "bold", // <-- dark & bold discount
+                      }}
+                    >
                       ₹{itemDiscount.toFixed(2)}
                     </td>
                     <td style={{ textAlign: "right" }}>
