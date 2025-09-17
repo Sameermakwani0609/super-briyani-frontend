@@ -5,12 +5,12 @@ import { usePathname, useRouter } from "next/navigation";
 import { useCart } from "./CartContext";
 import { useOrders } from "./OrderContext";
 import AuthForm from "./AuthForm";
-import { onAuthChange, getCurrentUser, logOut } from "../../lib/authClient"; // Use logOut
+import { onAuthChange, getCurrentUser, logOut } from "../../lib/authClient";
 
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [showAuthForm, setShowAuthForm] = useState(false);
-  const [user, setUser] = useState(null); // Track user
+  const [user, setUser] = useState(null);
   const pathname = usePathname();
   const router = useRouter();
   const { getCartCount } = useCart();
@@ -18,15 +18,13 @@ export default function Navbar() {
 
   useEffect(() => {
     const unsub = onAuthChange((u) => {
-      setUser(u); // Set user on auth change
+      setUser(u);
       if (u) setShowAuthForm(false);
     });
-    // Initial user fetch
     setUser(getCurrentUser && getCurrentUser());
     return () => unsub();
   }, []);
 
-  // Prefetch menu route on home to speed up first navigation
   useEffect(() => {
     if (pathname === "/") {
       try {
@@ -34,9 +32,11 @@ export default function Navbar() {
       } catch {}
     }
   }, [pathname, router]);
+
   if (pathname && pathname.startsWith("/admin")) {
     return null;
   }
+
   const links =
     pathname === "/"
       ? [
@@ -49,16 +49,39 @@ export default function Navbar() {
         ]
       : [{ name: "Home", href: "/" }];
 
+  // ✅ Smooth scroll to top
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    document.body.scrollTop = 0; // Safari fallback
+    document.documentElement.scrollTop = 0; // Chrome/Firefox fallback
+  };
+
+  // ✅ Handle logo click
+  const handleLogoClick = () => {
+    if (pathname === "/") {
+      scrollToTop();
+    } else {
+      router.push("/");
+      setTimeout(() => scrollToTop(), 300);
+    }
+    setMobileOpen(false);
+  };
+
   return (
     <>
       <nav className="fixed top-0 w-full z-40 backdrop-blur-xl bg-black/30 border-b border-yellow-500/10 transition-all duration-300">
         <div className="container mx-auto px-3 sm:px-6 py-4 flex items-center justify-between">
           {/* Logo */}
           <div className="flex items-center space-x-2">
-            <h1 className="text-xl sm:text-2xl font-playfair font-bold bg-clip-text text-transparent bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-400">
+            <h1
+              className="cursor-pointer text-xl sm:text-2xl font-playfair font-bold bg-clip-text text-transparent bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-400"
+              onClick={handleLogoClick}
+            >
               Asif Bhai&apos;s Biryani
             </h1>
           </div>
+
+          {/* Desktop Links */}
           <div className="hidden lg:flex items-center space-x-8 text-white">
             {links.map((item) => (
               <Link
@@ -70,6 +93,8 @@ export default function Navbar() {
               </Link>
             ))}
           </div>
+
+          {/* Right Side Icons + Auth */}
           <div className="flex items-center space-x-2 sm:space-x-4">
             <Link
               href="/orders"
@@ -90,6 +115,7 @@ export default function Navbar() {
                 <path d="M9 12l2 2 4-4"></path>
               </svg>
             </Link>
+
             <Link
               href="/cart"
               className="text-white hover:text-yellow-400 relative"
@@ -115,12 +141,13 @@ export default function Navbar() {
                 </span>
               )}
             </Link>
+
             {user ? (
               <span className="text-yellow-400 font-semibold hidden lg:block">
                 {user.name || user.displayName}
               </span>
             ) : null}
-            {/* Login/Logout button only on desktop */}
+
             {user ? (
               <button
                 onClick={() => {
@@ -139,13 +166,13 @@ export default function Navbar() {
                 Login
               </button>
             )}
-            {/* Mobile hamburger menu icon button */}
+
+            {/* Mobile Hamburger */}
             <button
               className="block lg:hidden text-yellow-400 p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-yellow-400"
               onClick={() => setMobileOpen(true)}
               aria-label="Open menu"
             >
-              {/* Hamburger icon SVG */}
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="h-7 w-7"
@@ -154,42 +181,24 @@ export default function Navbar() {
                 stroke="currentColor"
                 strokeWidth={2}
               >
-                <line
-                  x1="4"
-                  y1="7"
-                  x2="20"
-                  y2="7"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                />
-                <line
-                  x1="4"
-                  y1="12"
-                  x2="20"
-                  y2="12"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                />
-                <line
-                  x1="4"
-                  y1="17"
-                  x2="20"
-                  y2="17"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                />
+                <line x1="4" y1="7" x2="20" y2="7" />
+                <line x1="4" y1="12" x2="20" y2="12" />
+                <line x1="4" y1="17" x2="20" y2="17" />
               </svg>
             </button>
           </div>
         </div>
       </nav>
-      {/* Mobile Menu Overlay */}
+
+      {/* Mobile Overlay */}
       {mobileOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
           onClick={() => setMobileOpen(false)}
         />
       )}
+
+      {/* Mobile Drawer */}
       <div
         className={`fixed top-0 right-0 h-full w-full sm:w-80 bg-black/90 backdrop-blur-xl z-50 transform ${
           mobileOpen ? "translate-x-0" : "translate-x-full"
@@ -215,6 +224,7 @@ export default function Navbar() {
                 {item.name}
               </Link>
             ))}
+
             <Link
               href="/orders"
               className="block text-white hover:text-yellow-400 transition-colors flex items-center"
@@ -235,6 +245,7 @@ export default function Navbar() {
               </svg>
               Order Tracking
             </Link>
+
             <Link
               href="/cart"
               className="block text-white hover:text-yellow-400 transition-colors flex items-center"
@@ -256,6 +267,7 @@ export default function Navbar() {
               </svg>
               Cart ({getCartCount()})
             </Link>
+
             {user ? (
               <>
                 <span className="block text-yellow-400 font-semibold">
@@ -286,6 +298,8 @@ export default function Navbar() {
           </div>
         </div>
       </div>
+
+      {/* Auth Modal */}
       {showAuthForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div
