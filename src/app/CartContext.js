@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { auth, googleProvider, db, timestamp } from "../../lib/firebase";
 import { signInWithPopup, onAuthStateChanged } from "firebase/auth";
-import { doc, setDoc, collection, addDoc } from "firebase/firestore";
+import { doc, setDoc, collection, addDoc, getDocs } from "firebase/firestore";
 import toast from "react-hot-toast";
 
 const CartContext = createContext();
@@ -181,14 +181,51 @@ export function CartProvider({ children }) {
 
       const subtotal = getCartTotal();
 
-      const pct = Math.max(
-        0,
-        Math.min(100, Number(appliedDiscountPercent) || 0)
-      );
+      // Fetch category-specific discounts (fallback to appliedDiscountPercent)
+      let categoryDiscounts = {};
+      let globalFlat = 0;
+      try {
+        const snap = await getDocs(collection(db, "shop"));
+        snap.forEach((d) => {
+          const data = d.data() || {};
+          if (data.CategoryDiscounts && typeof data.CategoryDiscounts === "object") {
+            categoryDiscounts = data.CategoryDiscounts || {};
+          }
+          if (typeof data.DiscountFlat === "number") {
+            globalFlat = Math.max(0, Number(data.DiscountFlat) || 0);
+          }
+        });
+      } catch {}
+
+      const normalizePercent = (v) => {
+        const n = Number(v);
+        if (!Number.isFinite(n)) return 0;
+        return Math.max(0, Math.min(100, n));
+      };
+      const globalPct = normalizePercent(appliedDiscountPercent);
+      const resolveDiscountForItem = (item) => {
+        const cat = item?.category;
+        if (!cat) return globalFlat > 0 ? { type: "flat", value: globalFlat } : { type: "percent", value: globalPct };
+        const key = String(cat).toLowerCase();
+        for (const [k, v] of Object.entries(categoryDiscounts || {})) {
+          if (String(k).toLowerCase() === key) {
+            if (v && typeof v === "object") {
+              if (v.type === "flat") return { type: "flat", value: Math.max(0, Number(v.value) || 0) };
+              return { type: "percent", value: normalizePercent(v.value) };
+            }
+            return { type: "percent", value: normalizePercent(v) };
+          }
+        }
+        return globalFlat > 0 ? { type: "flat", value: globalFlat } : { type: "percent", value: globalPct };
+      };
+
       const itemsWithSnapshot = cart.map((item) => {
+        const disc = resolveDiscountForItem(item);
         const unitPrice = Number(item.price || 0);
         const quantity = Number(item.quantity || 0);
-        const unitDiscountedPrice = Math.max(0, unitPrice * (1 - pct / 100));
+        const unitDiscountedPrice = disc.type === "flat"
+          ? Math.max(0, unitPrice - Math.min(unitPrice, Number(disc.value) || 0))
+          : Math.max(0, unitPrice * (1 - (Number(disc.value) || 0) / 100));
         const lineBaseTotal = unitPrice * quantity;
         const lineDiscountedTotal = Math.max(0, unitDiscountedPrice * quantity);
         return {
@@ -197,7 +234,9 @@ export function CartProvider({ children }) {
           unitDiscountedPrice,
           lineBaseTotal,
           lineDiscountedTotal,
-          appliedDiscountPercent: pct,
+          appliedDiscountPercent: disc.type === "percent" ? Number(disc.value) || 0 : 0,
+          appliedDiscountFlat: disc.type === "flat" ? Number(disc.value) || 0 : 0,
+          appliedDiscountType: disc.type,
         };
       });
       const discountedTotal = itemsWithSnapshot.reduce(
@@ -248,7 +287,7 @@ export function CartProvider({ children }) {
         address,
         items: itemsWithSnapshot,
         subtotal,
-        appliedDiscountPercent: pct,
+        appliedDiscountPercent: globalPct,
         discountedTotal,
         total: discountedTotal,
         createdAt: timestamp(),

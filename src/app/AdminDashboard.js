@@ -89,6 +89,9 @@ export default function AdminDashboard() {
   const [cityResults, setCityResults] = useState([]);
   const [citySearching, setCitySearching] = useState(false);
   const [discountPercent, setDiscountPercent] = useState(0);
+  const [categoryDiscounts, setCategoryDiscounts] = useState({});
+  const [discountCategory, setDiscountCategory] = useState("");
+  const [discountCategoryPercent, setDiscountCategoryPercent] = useState("");
   const seenPendingIdsRef = useRef(new Set());
   const initialOrdersLoadRef = useRef(false);
   const isAlertingRef = useRef(false);
@@ -168,8 +171,11 @@ export default function AdminDashboard() {
         if (typeof docData.CityLng === "number") setAdminLng(docData.CityLng);
         if (typeof docData.DeliveryRadiusKm === "number")
           setDeliveryRadiusKm(docData.DeliveryRadiusKm);
-        if (typeof docData.DiscountPercent === "number")
-          setDiscountPercent(docData.DiscountPercent);
+        if (typeof docData.DiscountFlat === "number")
+          setDiscountPercent(docData.DiscountFlat);
+        if (docData.CategoryDiscounts && typeof docData.CategoryDiscounts === "object") {
+          setCategoryDiscounts(docData.CategoryDiscounts || {});
+        }
       }
     });
 
@@ -404,15 +410,53 @@ export default function AdminDashboard() {
   const saveDiscount = async () => {
     try {
       if (!shopDocId) return;
-      const pct = Math.max(0, Math.min(100, Number(discountPercent) || 0));
+      const amt = Math.max(0, Number(discountPercent) || 0);
       await updateDoc(doc(db, "shop", shopDocId), {
-        DiscountPercent: pct,
+        DiscountFlat: amt,
         DiscountUpdatedAt: new Date().toISOString(),
       });
-      setDiscountPercent(pct);
-      showNotification("Discount saved");
+      setDiscountPercent(amt);
+      showNotification("Flat discount saved");
     } catch {
       showNotification("Failed to save discount", "error");
+    }
+  };
+
+  const saveCategoryDiscount = async () => {
+    try {
+      if (!shopDocId) return;
+      const cat = (discountCategory || "").trim();
+      if (!cat) {
+        showNotification("Select a category", "error");
+        return;
+      }
+      const valNum = Number(discountCategoryPercent) || 0;
+      const updated = { ...(categoryDiscounts || {}) };
+      updated[cat] = { type: "flat", value: Math.max(0, valNum) };
+      await updateDoc(doc(db, "shop", shopDocId), {
+        CategoryDiscounts: updated,
+        DiscountUpdatedAt: new Date().toISOString(),
+      });
+      setCategoryDiscounts(updated);
+      showNotification("Category discount saved");
+    } catch {
+      showNotification("Failed to save category discount", "error");
+    }
+  };
+
+  const removeCategoryDiscount = async (catKey) => {
+    try {
+      if (!shopDocId) return;
+      const updated = { ...(categoryDiscounts || {}) };
+      delete updated[catKey];
+      await updateDoc(doc(db, "shop", shopDocId), {
+        CategoryDiscounts: updated,
+        DiscountUpdatedAt: new Date().toISOString(),
+      });
+      setCategoryDiscounts(updated);
+      showNotification("Category discount removed");
+    } catch {
+      showNotification("Failed to remove category discount", "error");
     }
   };
 
@@ -681,97 +725,114 @@ export default function AdminDashboard() {
       await updateDoc(doc(db, "orders", id), { status: "accepted" });
 
       // Send WhatsApp notification
-      if (order.billingMobile) {
-        const orderDetails =
-          order.items
-            ?.map(
-              (item) =>
-                `• ${item.itemName || item.name || "Unnamed item"} - ₹${Number(
-                  item.price || 0
-                ).toFixed(2)} × ${item.quantity || 0} = ₹${(
-                  Number(item.price || 0) * Number(item.quantity || 0)
-                ).toFixed(2)}`
-            )
-            .join("\n") || "No items";
+if (order.billingMobile) {
+  const orderDetails =
+    order.items
+      ?.map(
+        (item) =>
+          `• ${item.itemName || item.name || "Unnamed item"} - ₹${Number(
+            item.price || 0
+          ).toFixed(2)} × ${item.quantity || 0} = ₹${(
+            Number(item.price || 0) * Number(item.quantity || 0)
+          ).toFixed(2)}`
+      )
+      .join("\n") || "No items";
 
-        const total =
-          order.total ||
-          order.items?.reduce(
-            (sum, item) =>
-              sum + Number(item.price || 0) * Number(item.quantity || 0),
-            0
-          ) ||
-          0;
+  const total =
+    order.total ||
+    order.items?.reduce(
+      (sum, item) =>
+        sum + Number(item.price || 0) * Number(item.quantity || 0),
+      0
+    ) ||
+    0;
 
-        const message = `🍽️ *Asif's Briyani - Order Accepted!* 🎉
+  const message = [
+    "🍽️ *Asif's Briyani - Order Accepted!* 🎉 (ऑर्डर स्वीकृत ✅)",
+    "",
+    `*Order ID:* ${order.orderID || `#${id}`}`,
+    "*Status:* ✅ ACCEPTED (स्वीकृत)",
+    "",
+    "*Order Details / ऑर्डर विवरण:*",
+    orderDetails,
+    "",
+    `*Total Amount / कुल राशि:* ₹${Number(total).toFixed(2)}`,
+    `*Customer Name / ग्राहक का नाम:* ${order.billingName || order.name}`,
+    `*Delivery Address / डिलीवरी पता:* ${order.address}`,
+    "",
+    `*Order Time / ऑर्डर समय:* ${formatDate(order.createdAt)}`,
+    "",
+    "Thank you for choosing Asif's Briyani! 🚚",
+    "(आपका धन्यवाद 🙏 ऑर्डर तैयार किया जा रहा है और जल्द ही डिलीवर होगा।)"
+  ].join("\n");
 
-*Order ID:* ${order.orderID || `#${id}`}
-*Status:* ✅ ACCEPTED
+  await sendWhatsAppMessage(order.billingMobile, message);
+}
 
-*Order Details:*
-${orderDetails}
+showNotification("Order accepted and WhatsApp notification sent!");
+} catch (e) {
+  console.error("[AdminDashboard] Failed to accept order:", e);
+  showNotification("Failed to accept order", "error");
+}
+};
 
-*Total Amount:* ₹${Number(total).toFixed(2)}
-*Customer Name:* ${order.billingName || order.name}
-*Delivery Address:* ${order.address}
+const rejectOrder = async (id) => {
+  const order = orders.find((o) => o.id === id);
+  if (!order) {
+    showNotification("Order not found", "error");
+    return;
+  }
 
-*Order Time:* ${formatDate(order.createdAt)}
+  openConfirm({
+    title: "Reject Order",
+    message: "Are you sure you want to reject this order?",
+    confirmText: "Reject",
+    cancelText: "Cancel",
+    theme: "danger",
+    icon: "times",
+    onConfirm: async () => {
+      try {
+        await updateDoc(doc(db, "orders", id), { status: "rejected" });
 
-Thank you for choosing Asif's Briyani! Your order is being prepared and will be delivered soon. 🚚
+        // Send WhatsApp notification
+        if (order.billingMobile) {
+          const message = [
+            "🍽️ *Asif's Briyani - Order Update* (ऑर्डर अपडेट)",
+            "",
+            `*Order ID:* ${order.orderID || `#${id}`}`,
+            "*Status:* ❌ REJECTED (अस्वीकृत)",
+            "",
+            `Dear ${order.billingName || order.name},`,
+            `प्रिय ${order.billingName || order.name},`,
+            "",
+            "We regret to inform you that your order has been rejected. (हमें खेद है कि आपका ऑर्डर अस्वीकृत कर दिया गया है।)",
+            "",
+            "Possible reasons / संभावित कारण:",
+            "• Item unavailability (आइटम उपलब्ध नहीं)",
+            "• Delivery area restrictions (डिलीवरी क्षेत्र सीमित)",
+            "• Restaurant capacity (रेस्तरां क्षमता)",
+            "",
+            "*Order Details / ऑर्डर विवरण:*",
+            `• Order Time / ऑर्डर समय: ${formatDate(order.createdAt)}`,
+            `• Delivery Address / डिलीवरी पता: ${order.address}`,
+            "",
+            "We apologize for any inconvenience caused 🙏 (असुविधा के लिए क्षमा करें)।",
+            "You can place a new order or contact us for help. (आप नया ऑर्डर कर सकते हैं या हमसे संपर्क करें।)",
+            "",
+            "Thank you for considering Asif Bhai's Briyani! 🙏 (असिफ भाई की बिरयानी चुनने के लिए धन्यवाद 🙏)"
+          ].join("\n");
 
-For any queries, contact us at our restaurant.`;
-
-        await sendWhatsAppMessage(order.billingMobile, message);
-      }
-
-      showNotification("Order accepted and WhatsApp notification sent!");
-    } catch (e) {
-      console.error("[AdminDashboard] Failed to accept order:", e);
-      showNotification("Failed to accept order", "error");
-    }
-  };
-
-  const rejectOrder = async (id) => {
-    const order = orders.find((o) => o.id === id);
-    if (!order) {
-      showNotification("Order not found", "error");
-      return;
-    }
-
-    openConfirm({
-      title: "Reject Order",
-      message: "Are you sure you want to reject this order?",
-      confirmText: "Reject",
-      cancelText: "Cancel",
-      theme: "danger",
-      icon: "times",
-      onConfirm: async () => {
-        try {
-          await updateDoc(doc(db, "orders", id), { status: "rejected" });
-
-          // Send WhatsApp notification
-          if (order.billingMobile) {
-            const message = `🍽️ *Asif's Biryani - Order Update* \n\n*Order ID:* ${
-              order.orderID || `#${id}`
-            }\n*Status:* ❌ REJECTED\n\nDear ${
-              order.billingName || order.name
-            },\n\nWe regret to inform you that your order has been rejected. This could be due to:\n• Item unavailability\n• Delivery area restrictions\n• Restaurant capacity\n\n*Order Details:*\n• Order Time: ${formatDate(
-              order.createdAt
-            )}\n• Delivery Address: ${
-              order.address
-            }\n\nWe apologize for any inconvenience caused. Please feel free to place a new order or contact us for assistance.\n\nThank you for considering Asif Bhais Briyani! 🙏`;
-
-            await sendWhatsAppMessage(order.billingMobile, message);
-          }
-
-          showNotification("Order rejected and WhatsApp notification sent!");
-        } catch (e) {
-          console.error("[AdminDashboard] Failed to reject order:", e);
-          showNotification("Failed to reject order", "error");
+          await sendWhatsAppMessage(order.billingMobile, message);
         }
-      },
-    });
-  };
+
+        showNotification("Order rejected and WhatsApp notification sent!");
+      } catch (e) {
+        console.error("[AdminDashboard] Failed to reject order:", e);
+        showNotification("Failed to reject order", "error");
+      }
+    },
+  });
+};
 
   const [printOrder, setPrintOrder] = useState(null);
   // Helper for paginated items
@@ -1902,12 +1963,11 @@ For any queries, contact us at our restaurant.`;
               </h2>
               <div className="mb-4">
                 <label className="block text-yellow-400 font-semibold mb-2">
-                  Discount Percentage
+                  Discount (₹)
                 </label>
                 <input
                   type="number"
                   min="0"
-                  max="100"
                   value={discountPercent}
                   onChange={(e) => setDiscountPercent(e.target.value)}
                   className="w-full bg-gray-800 border border-gray-700 text-white px-4 py-2 rounded-lg focus:outline-none"
@@ -1920,6 +1980,78 @@ For any queries, contact us at our restaurant.`;
                 <FaSave className="mr-2" />
                 Save Discount
               </button>
+
+              <div className="h-px bg-gray-700 my-6" />
+              <h3 className="text-xl font-bold text-yellow-400 mb-3 text-center">
+                Category-wise Discount
+              </h3>
+              <div className="grid grid-cols-1 gap-3 mb-3">
+                <div>
+                  <label className="block text-yellow-400 font-semibold mb-2">
+                    Select Category
+                  </label>
+                  <select
+                    className="w-full bg-gray-800 border border-gray-700 text-white px-4 py-2 rounded-lg focus:outline-none"
+                    value={discountCategory}
+                    onChange={(e) => setDiscountCategory(e.target.value)}
+                  >
+                    <option value="">Select Category</option>
+                    {[...new Set(menuItems.map((i) => i.category))].map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-yellow-400 font-semibold mb-2">
+                    Discount (₹)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={discountCategoryPercent}
+                    onChange={(e) => setDiscountCategoryPercent(e.target.value)}
+                    placeholder={"e.g. 50 for ₹50 off"}
+                    className="w-full bg-gray-800 border border-gray-700 text-white px-4 py-2 rounded-lg focus:outline-none"
+                  />
+                </div>
+                <button
+                  onClick={saveCategoryDiscount}
+                  className="w-full bg-yellow-400 hover:bg-yellow-500 text-black py-2 rounded-lg font-bold"
+                >
+                  Save Category Discount
+                </button>
+              </div>
+
+              {categoryDiscounts && Object.keys(categoryDiscounts).length > 0 && (
+                <div className="mt-4">
+                  <h4 className="text-lg font-semibold text-yellow-400 mb-2">
+                    Current Category Discounts
+                  </h4>
+                  <div className="space-y-2">
+                    {Object.entries(categoryDiscounts).map(([cat, val]) => {
+                      const isObj = val && typeof val === "object";
+                      const label = isObj
+                        ? (val.type === "flat" ? `₹${Number(val.value)}` : `${Number(val.value)}%`)
+                        : `${Number(val)}%`;
+                      return (
+                        <div key={cat} className="flex items-center justify-between bg-gray-800 border border-gray-700 rounded-lg px-3 py-2">
+                          <span className="font-semibold">
+                            {cat}: <span className="text-yellow-400 ml-2">{label}</span>
+                          </span>
+                          <button
+                            onClick={() => removeCategoryDiscount(cat)}
+                            className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded"
+                            title="Remove"
+                          >
+                            <FaTrash />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

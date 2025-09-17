@@ -132,9 +132,12 @@ export default function OrdersPage() {
                             )),
                       0
                     );
-              const snapshotPct =
-                Number(order.appliedDiscountPercent || 0) || 0;
+              const snapshotPct = Number(order.appliedDiscountPercent || 0) || 0;
               const hasDisc = finalTotal < baseTotal - 1e-6;
+              const savings = hasDisc ? Math.max(0, baseTotal - finalTotal) : 0;
+              const hasFlat = (order.items || []).some(
+                (it) => (it.appliedDiscountType === "flat") || (Number(it.appliedDiscountFlat || 0) > 0)
+              );
               return (
                 <div
                   key={order.id}
@@ -175,9 +178,11 @@ export default function OrdersPage() {
                           <span className="text-yellow-400 font-semibold">
                             ₹{finalTotal.toFixed(2)}
                           </span>{" "}
-                          {snapshotPct > 0 && (
+                          {hasDisc && (
                             <span className="text-green-400 text-xs">
-                              ({snapshotPct}% off)
+                              {hasFlat
+                                ? `(₹${savings.toFixed(2)} off)`
+                                : (snapshotPct > 0 ? `(${snapshotPct}% off)` : ``)}
                             </span>
                           )}
                         </span>
@@ -331,6 +336,10 @@ export default function OrdersPage() {
                       );
                 const snapshotPct = Number(o.appliedDiscountPercent || 0) || 0;
                 const hasDisc = finalTotal < baseTotal - 1e-6;
+                const savings = hasDisc ? Math.max(0, baseTotal - finalTotal) : 0;
+                const hasFlat = (o.items || []).some(
+                  (it) => (it.appliedDiscountType === "flat") || (Number(it.appliedDiscountFlat || 0) > 0)
+                );
                 return (
                   <div
                     key={o.id}
@@ -366,9 +375,11 @@ export default function OrdersPage() {
                             <span className="text-yellow-400 font-semibold">
                               ₹{finalTotal.toFixed(2)}
                             </span>{" "}
-                            {snapshotPct > 0 && (
+                            {hasDisc && (
                               <span className="text-green-400 text-xs">
-                                ({snapshotPct}% off)
+                                {hasFlat
+                                  ? `(₹${savings.toFixed(2)} off)`
+                                  : (snapshotPct > 0 ? `(${snapshotPct}% off)` : ``)}
                               </span>
                             )}
                           </span>

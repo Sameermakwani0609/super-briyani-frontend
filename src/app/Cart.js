@@ -39,6 +39,8 @@ export default function Cart() {
   });
   const [adminRadiusKm, setAdminRadiusKm] = useState(10);
   const [discountPercent, setDiscountPercent] = useState(0);
+  const [discountFlat, setDiscountFlat] = useState(0);
+  const [categoryDiscounts, setCategoryDiscounts] = useState({});
 
   // NEW: Alert state
   const [alertMessage, setAlertMessage] = useState("");
@@ -62,12 +64,35 @@ export default function Cart() {
           if (typeof data.DiscountPercent === "number") {
             setDiscountPercent(data.DiscountPercent);
           }
+          if (typeof data.DiscountFlat === "number") {
+            setDiscountFlat(data.DiscountFlat);
+          }
+          if (data.CategoryDiscounts && typeof data.CategoryDiscounts === "object") {
+            setCategoryDiscounts(data.CategoryDiscounts || {});
+          }
         }
       } catch {
         // ignore and keep defaults
       }
     })();
   }, []);
+
+  const getDiscountForCategory = (category) => {
+    const global = { type: "flat", value: Math.max(0, Number(discountFlat) || 0) };
+    if (!category) return global;
+    const key = String(category).toLowerCase();
+    for (const [catKey, val] of Object.entries(categoryDiscounts || {})) {
+      if (String(catKey).toLowerCase() === key) {
+        if (val && typeof val === "object") {
+          if (val.type === "flat") return { type: "flat", value: Math.max(0, Number(val.value) || 0) };
+          return { type: "percent", value: Math.max(0, Math.min(100, Number(val.value) || 0)) };
+        }
+        const n = Number(val);
+        if (Number.isFinite(n)) return { type: "percent", value: Math.max(0, Math.min(100, n)) };
+      }
+    }
+    return global;
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -296,12 +321,15 @@ export default function Cart() {
 
                     <div className="text-right">
                       {(() => {
-                        const pct = Number(discountPercent) || 0;
+                        const disc = getDiscountForCategory(item.category);
                         const unit = Number(item.price || 0);
                         const qty = Number(item.quantity || 0);
                         const base = unit * qty;
-                        const final = Math.max(0, unit * (1 - pct / 100)) * qty;
-                        return pct > 0 ? (
+                        const unitAfter = disc.type === "flat"
+                          ? Math.max(0, unit - Math.min(unit, Number(disc.value || 0)))
+                          : Math.max(0, unit * (1 - (Number(disc.value) || 0) / 100));
+                        const final = unitAfter * qty;
+                        return unitAfter !== unit ? (
                           <div className="text-right">
                             <div className="text-gray-400 line-through">
                               ₹{base.toFixed(2)}
@@ -335,18 +363,30 @@ export default function Cart() {
                 <span className="text-yellow-400">
                   ₹
                   {(() => {
-                    const pct = Number(discountPercent) || 0;
                     const discounted = cart.reduce((sum, it) => {
+                      const disc = getDiscountForCategory(it.category);
                       const p = Number(it.price || 0);
                       const q = Number(it.quantity || 0);
-                      const unitDisc = Math.max(0, p * (1 - pct / 100));
-                      return sum + unitDisc * q;
+                      const unitAfter = disc.type === "flat"
+                        ? Math.max(0, p - Math.min(p, Number(disc.value || 0)))
+                        : Math.max(0, p * (1 - (Number(disc.value) || 0) / 100));
+                      return sum + unitAfter * q;
                     }, 0);
                     return discounted.toFixed(2);
                   })()}
                 </span>
               </div>
-              {Number(discountPercent) > 0 && (
+              {(() => {
+                const hasAnyDiscount = cart.some((it) => {
+                  const disc = getDiscountForCategory(it.category);
+                  const p = Number(it.price || 0);
+                  const unitAfter = disc.type === "flat"
+                    ? Math.max(0, p - Math.min(p, Number(disc.value || 0)))
+                    : Math.max(0, p * (1 - (Number(disc.value) || 0) / 100));
+                  return unitAfter !== p;
+                });
+                return hasAnyDiscount;
+              })() && (
                 <div className="text-right text-xs sm:text-sm text-gray-400 mt-1">
                   <span className="line-through mr-2">
                     ₹
@@ -354,9 +394,7 @@ export default function Cart() {
                       ? getCartTotal().toFixed(2)
                       : getCartTotal()}
                   </span>
-                  <span className="text-green-400">
-                    ({Number(discountPercent)}% off applied)
-                  </span>
+                  <span className="text-green-400">(Discount applied)</span>
                 </div>
               )}
             </div>
@@ -468,12 +506,14 @@ export default function Cart() {
                 className="w-full bg-gradient-to-r from-yellow-400 to-yellow-600 text-black py-4 rounded-lg font-bold text-base sm:text-lg hover:shadow-lg hover:shadow-yellow-400/25 transition-all duration-200"
               >
                 {(() => {
-                  const pct = Number(discountPercent) || 0;
                   const discounted = cart.reduce((sum, it) => {
+                    const disc = getDiscountForCategory(it.category);
                     const p = Number(it.price || 0);
                     const q = Number(it.quantity || 0);
-                    const unitDisc = Math.max(0, p * (1 - pct / 100));
-                    return sum + unitDisc * q;
+                    const unitAfter = disc.type === "flat"
+                      ? Math.max(0, p - Math.min(p, Number(disc.value || 0)))
+                      : Math.max(0, p * (1 - (Number(disc.value) || 0) / 100));
+                    return sum + unitAfter * q;
                   }, 0);
                   return `Place Order - ₹${discounted.toFixed(2)}`;
                 })()}
