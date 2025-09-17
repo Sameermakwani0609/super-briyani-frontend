@@ -130,8 +130,8 @@ export default function Receipt({ order }) {
                     <td
                       style={{
                         textAlign: "right",
-                        color: "#059669",
-                        fontWeight: "bold", // <-- dark & bold discount
+                        color: "#000", // black instead of green
+                        fontWeight: "bold", // bold for emphasis
                       }}
                     >
                       ₹{itemDiscount.toFixed(2)}
@@ -163,7 +163,7 @@ export default function Receipt({ order }) {
         </div>
         <div>
           Discount:{" "}
-          <span style={{ float: "right", color: "#059669" }}>
+          <span style={{ float: "right", color: "#000", fontWeight: "bold" }}>
             -₹{totalDiscount.toFixed(2)}
           </span>
         </div>
