@@ -16,9 +16,8 @@ import { Pagination, Autoplay } from "swiper/modules";
 export default function FeaturedMenu() {
   const [menuItems, setMenuItems] = useState([]);
   const [discountPercent, setDiscountPercent] = useState(0);
-  const [discountFlat, setDiscountFlat] = useState(0);
   const [categoryDiscounts, setCategoryDiscounts] = useState({});
-  const { addToCart, cart, updateQuantity } = useCart();
+  const { cart } = useCart();
 
   // ✅ track if user is on mobile
   const [isMobile, setIsMobile] = useState(false);
@@ -124,12 +123,12 @@ export default function FeaturedMenu() {
           </div>
         )}
         {/* Image */}
-        <div className="h-36 md:h-40 xl:h-44 w-full flex items-center justify-center overflow-hidden bg-black/40 p-2">
+        <div className="h-36 md:h-40 xl:h-100 w-full flex items-center justify-center overflow-hidden bg-black/40 p-2">
           {item.photoUrl ? (
             <img
               src={item.photoUrl}
               alt={item.itemName}
-              className="w-full rounded-xl object-cover  h-full object-contain transition-transform duration-500"
+              className="w-full rounded-xl object-cover h-full object-contain transition-transform duration-500"
             />
           ) : (
             <span className="text-gray-400">No Image</span>
@@ -146,60 +145,31 @@ export default function FeaturedMenu() {
   return (
     <section id="menu" className="py-5 bg-black">
       <div className="container mx-auto px-2 sm:px-6">
-        {/* Show Swiper on mobile/tablet; horizontal scroll on desktop when >4 */}
-        <div className="block lg:hidden">
-          {menuItems.length > 3 ? (
-            <Swiper
-              modules={[Pagination, Autoplay]}
-              spaceBetween={20}
-              slidesPerView={1}
-              breakpoints={{
-                640: { slidesPerView: 1 },
-                768: { slidesPerView: 2 },
-                1024: { slidesPerView: 3 },
-              }}
-              pagination={{ clickable: true }}
-              loop={true}
-              autoplay={
-                isMobile ? { delay: 1000, disableOnInteraction: false } : false
-              }
-              className="pb-10"
-            >
-              {menuItems.map((item) => (
-                <SwiperSlide key={item.id}>
-                  <Card item={item} />
-                </SwiperSlide>
-              ))}
-            </Swiper>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 xl:gap-10">
-              {menuItems.map((item) => (
-                <Card key={item.id} item={item} />
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="hidden lg:block">
-          {menuItems.length > 4 ? (
-            <div className="menu-scroll overflow-x-auto pb-4">
-              <div className="flex items-stretch gap-8 pr-4">
-                {menuItems.map((item) => (
-                  <div key={item.id} className="shrink-0 w-[22rem]">
-                    <Card item={item} />
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 xl:grid-cols-4 gap-8 xl:gap-10">
-              {menuItems.map((item) => (
-                <Card key={item.id} item={item} />
-              ))}
-            </div>
-          )}
-        </div>
+        {menuItems.length > 0 && (
+          <Swiper
+            modules={[Pagination, Autoplay]}
+            spaceBetween={20}
+            slidesPerView={1}
+            breakpoints={{
+              640: { slidesPerView: 1 }, // sm
+              768: { slidesPerView: 1 }, // md
+              1024: { slidesPerView: 1 }, // lg
+              1280: { slidesPerView: 1 }, // xl
+            }}
+            pagination={{ clickable: true }}
+            loop={true}
+            autoplay={{ delay: 3000, disableOnInteraction: false }}
+            className="pb-10"
+          >
+            {menuItems.map((item) => (
+              <SwiperSlide key={item.id}>
+                <Card item={item} />
+              </SwiperSlide>
+            ))}
+          </Swiper>
+        )}
       </div>
+
       {/* Swiper theme overrides */}
       <style jsx global>{`
         .swiper-pagination-bullet {
@@ -208,21 +178,6 @@ export default function FeaturedMenu() {
         }
         .swiper-pagination-bullet-active {
           background: #f59e0b !important;
-        }
-
-        .menu-scroll {
-          scrollbar-width: thin;
-          scrollbar-color: #facc15 transparent;
-        }
-        .menu-scroll::-webkit-scrollbar {
-          height: 10px;
-        }
-        .menu-scroll::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .menu-scroll::-webkit-scrollbar-thumb {
-          background-color: #facc15;
-          border-radius: 9999px;
         }
       `}</style>
     </section>

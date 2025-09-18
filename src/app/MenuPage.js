@@ -170,6 +170,7 @@ export default function MenuPage() {
 
   return (
     <section className="pt-20 pb-10 bg-black text-white min-h-screen">
+      <FeaturedMenu />;
       <div className="container mx-auto px-2 sm:px-4">
         {/* Heading */}
         <h2 className="text-3xl sm:text-5xl font-bold text-center text-yellow-400 mb-2 sm:mb-4 drop-shadow-lg">
@@ -222,8 +223,6 @@ export default function MenuPage() {
             })}
           </div>
         </div>
-
-        <FeaturedMenu />
 
         {/* Menu Items Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
