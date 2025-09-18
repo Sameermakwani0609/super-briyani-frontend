@@ -186,7 +186,6 @@ export default function MenuPage() {
           </span>
         </div>
 
-
         {/* Search Bar */}
         <div className="flex justify-center mb-6 sm:mb-8 px-4">
           <input
@@ -202,7 +201,7 @@ export default function MenuPage() {
         </div>
 
         {/* Menu Categories */}
-        <div className="flex justify-center mb-6 sm:mb-8">
+        <div className="flex justify-center">
           <div className="flex space-x-2 sm:space-x-4 bg-yellow-400/20 p-2 rounded-lg overflow-x-auto scrollbar-hide">
             {categories.map((key) => {
               const Icon = categoryIcons[key] || GiKnifeFork;

@@ -117,79 +117,28 @@ export default function FeaturedMenu() {
     );
     const showDiscount = discounted !== price;
     return (
-      <div className="relative bg-gradient-to-b from-black/70 to-black backdrop-blur-md border border-gray-800 rounded-2xl p-5 md:p-6 xl:p-7 flex flex-col justify-between items-center w-full h-auto min-h-[22rem] md:min-h-[24rem] transition-all duration-300 shadow-lg shadow-black/40 ring-1 ring-yellow-400/10">
+      <div className="relative backdrop-blur-md border border-gray-800 rounded-2xl p-2 md:p-6 xl:p-7 flex flex-col justify-between items-center w-full h-auto min-h-[13rem] md:min-h-[13rem] transition-all duration-300 shadow-lg shadow-black/40 ring-1 ring-yellow-400/10">
         {showDiscount && (
           <div className="absolute top-3 right-3 bg-yellow-400 text-black text-xs font-bold px-2 py-1 rounded-md shadow-md">
-            {`Save ${Number(disc.value)}%`}
+            🔥 Hot Picks
           </div>
         )}
         {/* Image */}
-        <div className="h-36 md:h-40 xl:h-44 w-full rounded-xl mb-5 flex items-center justify-center overflow-hidden bg-black/40 border border-gray-800 p-2">
+        <div className="h-36 md:h-40 xl:h-44 w-full flex items-center justify-center overflow-hidden bg-black/40 p-2">
           {item.photoUrl ? (
             <img
               src={item.photoUrl}
               alt={item.itemName}
-              className="w-full h-full object-contain transition-transform duration-500"
+              className="w-full rounded-xl object-cover  h-full object-contain transition-transform duration-500"
             />
           ) : (
             <span className="text-gray-400">No Image</span>
           )}
         </div>
         {/* Title */}
-        <h4 className="text-xl md:text-2xl font-playfair font-bold mb-1 text-yellow-400 text-center">
+        <h4 className="text-xl md:text-2xl font-playfair italic mb-4 text-yellow-400 text-center">
           {item.itemName}
         </h4>
-        {/* Description */}
-        <p className="text-gray-300 mb-3 text-sm md:text-base text-center">
-          {item.description}
-        </p>
-        {/* Price */}
-        <div className="flex items-center justify-center mb-3">
-          {showDiscount ? (
-            <div className="flex items-center gap-2">
-              <span className="line-through text-gray-400">
-                ₹{price.toFixed(2)}
-              </span>
-              <span className="text-lg font-bold text-yellow-400">
-                ₹{discounted.toFixed(2)}
-              </span>
-              <span className="text-xs text-green-400">
-                ({`${Number(disc.value)}% off`})
-              </span>
-            </div>
-          ) : (
-            <span className="text-lg font-bold text-yellow-400">
-              ₹{price.toFixed(2)}
-            </span>
-          )}
-        </div>
-        {/* Add to Cart or Quantity Controls */}
-        {quantity === 0 ? (
-          <button
-            onClick={() => addToCart(item)}
-            className="bg-yellow-400 text-black px-4 py-2 rounded-lg font-semibold hover:bg-yellow-500 transition-colors"
-          >
-            Add to Cart
-          </button>
-        ) : (
-          <div className="flex items-center justify-center space-x-2 mt-2">
-            <button
-              onClick={() => updateQuantity(item.id, quantity - 1)}
-              className="bg-yellow-400 text-black w-8 h-8 md:w-9 md:h-9 rounded-full flex items-center justify-center font-bold hover:bg-yellow-500 transition-colors"
-            >
-              <FaMinus />
-            </button>
-            <span className="text-lg font-bold text-yellow-400 w-8 md:w-9 text-center">
-              {quantity}
-            </span>
-            <button
-              onClick={() => updateQuantity(item.id, quantity + 1)}
-              className="bg-yellow-400 text-black w-8 h-8 md:w-9 md:h-9 rounded-full flex items-center justify-center font-bold hover:bg-yellow-500 transition-colors"
-            >
-              <FaPlus />
-            </button>
-          </div>
-        )}
       </div>
     );
   };
