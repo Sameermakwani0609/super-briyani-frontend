@@ -178,13 +178,28 @@ export default function MenuPage() {
         </h2>
 
         {/* ✅ Notice Section */}
-        <div className="flex flex-col sm:flex-row justify-center items-center gap-3 mb-6 sm:mb-8">
-          <span className="bg-red-600 text-white text-sm sm:text-base px-4 py-2 rounded-full shadow-md font-semibold animate-pulse">
-            ❌ Not on Zomato & Swiggy
-          </span>
-          <span className="bg-green-600 text-white text-sm sm:text-base px-4 py-2 rounded-full shadow-md font-semibold">
-            🥩 No Beef Served
-          </span>
+
+        <div className="flex flex-row sm:flex-row justify-center items-center gap-3 mb-6 sm:mb-8 relative z-10">
+          {/* ✅ Content group */}
+          <div className="flex flex-row sm:flex-row justify-center items-center gap-3 mb-6 sm:mb-8 relative z-10">
+            <span className="bg-red-600 text-white text-sm sm:text-base px-4 py-2 rounded-full shadow-md font-semibold">
+              <span>Zomato</span>
+            </span>
+            <span className="bg-[#ea580c] text-white text-sm sm:text-base px-4 py-2 rounded-full shadow-md font-semibold">
+              <span>Swiggy</span>
+            </span>
+            <span className="bg-green-600 text-white text-sm sm:text-base px-4 py-2 rounded-full shadow-md font-semibold">
+              🥩<span> No Beef Served</span>
+            </span>
+          </div>
+
+          {/* ✅ Bold centered cross */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            {/* diagonal line 1 */}
+            <div className="absolute w-[60%] sm:w-[20%] h-1 bg-red-600 rotate-20 z-100"></div>
+            {/* diagonal line 2 */}
+            <div className="absolute w-[60%] sm:w-[20%] h-1 bg-red-600 -rotate-20 z-[100]"></div>
+          </div>
         </div>
 
         {/* Search Bar */}
